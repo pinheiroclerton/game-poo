@@ -1,4 +1,4 @@
-// teste
+// teste ok
 
 var player, ammunition, enemyAmmunition;
 var enemies = []; // Array para múltiplos inimigos
