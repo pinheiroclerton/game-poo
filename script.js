@@ -1,3 +1,5 @@
+// teste
+
 var player, ammunition, enemyAmmunition;
 var enemies = []; // Array para múltiplos inimigos
 var timer2Bala = 0;
