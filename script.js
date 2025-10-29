@@ -1,14 +1,12 @@
-// teste ok
-
 var player, ammunition, enemyAmmunition;
-var enemies = []; // Array para múltiplos inimigos
+var enemies = [];
 var timer2Bala = 0;
 var cooldown2Bala = 3000;
 var gameOver = false;
 var gameOverTimer = 0;
 var restartButton;
 var enemySpawnTimer = 0;
-var enemySpawnRate = 120; // Spawna um inimigo a cada 2 segundos (120 frames)
+var enemySpawnRate = 120;
 
 function preload() {
     bkgd = loadImage("img/background.jpg");
@@ -32,25 +30,21 @@ function setup() {
     enemies = [];
     enemySpawnTimer = 0;
     
-    // Criar alguns inimigos iniciais
     spawnEnemy();
     spawnEnemy();
 }
 
 function spawnEnemy() {
-    // Posição aleatória no topo da tela
     let x = random(50, width - 600);
-    let y = random(-200, -60); // Começa acima da tela
+    let y = random(-200, -60);
     
-    // Tamanho aleatório
     let size = random(40, 80);
     
-    // Criar novo inimigo
     let enemy = new Inimigo(x, y, size, size);
     enemy.isExploding = false;
     enemy.explosionTimer = 0;
-    enemy.speed = random(1, 3); // Velocidade aleatória
-    enemy.sprite = random() > 0.5 ? enemy1 : enemy2; // Sprite aleatório
+    enemy.speed = random(1, 3);
+    enemy.sprite = random() > 0.5 ? enemy1 : enemy2;
     
     enemies.push(enemy);
 }
@@ -76,12 +70,10 @@ function draw() {
 function spawnEnemiesOverTime() {
     enemySpawnTimer++;
     
-    // Spawnar novo inimigo a cada intervalo
     if (enemySpawnTimer >= enemySpawnRate && enemies.length < 5) {
         spawnEnemy();
         enemySpawnTimer = 0;
         
-        // Aumentar dificuldade: diminuir tempo entre spawns (mínimo 60 frames)
         if (enemySpawnRate > 60) {
             enemySpawnRate -= 2;
         }
@@ -97,14 +89,12 @@ function updateEnemies() {
             enemy.explosionTimer++;
             
             if (enemy.explosionTimer > 60) {
-                // Remove inimigo após explosão
                 enemies.splice(i, 1);
             }
         } else {
             enemy.show(enemy.sprite);
             enemy.automove(enemy.speed, height);
             
-            // Remove inimigo se sair da tela embaixo
             if (enemy.getY() > height + 100) {
                 enemies.splice(i, 1);
             }
@@ -122,36 +112,29 @@ function checkGameOver() {
 function handleGameOver() {
     gameOverTimer++;
     
-    // Fase 1: Explosão do player (0-60 frames / 1 segundo)
     if (gameOverTimer <= 60) {
         player.show(explosion);
-        // Continua mostrando os inimigos parados
         for (let i = 0; i < enemies.length; i++) {
             if (!enemies[i].isExploding) {
                 enemies[i].show(enemies[i].sprite);
             }
         }
     }
-    // Fase 2: Tela escura com texto e botão (após 60 frames)
     else {
-        // Fundo escuro semi-transparente
         fill(0, 0, 0, 200);
         rect(0, 0, width, height);
         
-        // Texto GAME OVER
         fill(255, 0, 0);
         textSize(120);
         textAlign(CENTER, CENTER);
         textStyle(BOLD);
         text("GAME OVER", width / 2, height / 2 - 100);
         
-        // Texto de pontuação ou mensagem
         fill(255);
         textSize(30);
         textStyle(NORMAL);
         text("Você foi derrotado!", width / 2, height / 2);
         
-        // Botão RESTART
         drawRestartButton();
     }
 }
@@ -162,11 +145,9 @@ function drawRestartButton() {
     let btnW = 200;
     let btnH = 60;
     
-    // Detectar hover
     let isHover = mouseX > btnX && mouseX < btnX + btnW && 
                   mouseY > btnY && mouseY < btnY + btnH;
     
-    // Desenhar botão
     if (isHover) {
         fill(100, 200, 100);
         cursor(HAND);
@@ -179,14 +160,12 @@ function drawRestartButton() {
     strokeWeight(3);
     rect(btnX, btnY, btnW, btnH, 10);
     
-    // Texto do botão
     fill(255);
     noStroke();
     textSize(28);
     textAlign(CENTER, CENTER);
     text("RESTART", width / 2, btnY + btnH / 2);
     
-    // Armazenar coordenadas do botão para clique
     restartButton = {x: btnX, y: btnY, w: btnW, h: btnH};
 }
 
@@ -210,7 +189,6 @@ function keyPressed() {
 }
 
 function gamecontrol() {
-    // Controlar movimento
     let isMovingUp = false;
     let isMovingDown = false;
 
@@ -229,7 +207,6 @@ function gamecontrol() {
         player.setX(player.getX() + 5);
     }
 
-    // Renderizar sprite apropriado
     if (isMovingUp) {
         player.show(mainShipUp);
     } else if (isMovingDown) {
@@ -240,7 +217,6 @@ function gamecontrol() {
 }
 
 function enemyShot() {
-    // Cada inimigo tem chance de atirar
     for (let i = 0; i < enemies.length; i++) {
         let enemy = enemies[i];
         
@@ -261,13 +237,12 @@ function drawBullets() {
             playerAmmunition[i].automove(10, false);
         }
 
-        // Verificar colisão com todos os inimigos
         let hitEnemy = false;
         
         for (let j = 0; j < enemies.length; j++) {
             let enemy = enemies[j];
             
-            if (enemy.isExploding) continue; // Pular inimigos já explodindo
+            if (enemy.isExploding) continue;
             
             let collision = false;
             if (playerAmmunition[i].getType() == 1) {
@@ -287,7 +262,7 @@ function drawBullets() {
                 enemy.isExploding = true;
                 enemy.explosionTimer = 0;
                 hitEnemy = true;
-                break; // Sair do loop de inimigos
+                break;
             }
         }
         
@@ -347,7 +322,6 @@ function removeBullets() {
 }
 
 function mousePressed() {
-    // Verificar se o botão restart foi clicado
     if (gameOver && restartButton) {
         if (mouseX > restartButton.x && mouseX < restartButton.x + restartButton.w &&
             mouseY > restartButton.y && mouseY < restartButton.y + restartButton.h) {
@@ -357,27 +331,21 @@ function mousePressed() {
 }
 
 function restartGame() {
-    // Resetar estado do jogo
     gameOver = false;
     gameOverTimer = 0;
     
-    // Resetar player
     player = new Nave(width / 2, height / 2);
     
-    // Limpar balas
     playerAmmunition = [];
     enemyAmmunition = [];
     
-    // Resetar inimigos
     enemies = [];
     enemySpawnTimer = 0;
-    enemySpawnRate = 120; // Resetar taxa de spawn
-    
-    // Criar alguns inimigos iniciais
+    enemySpawnRate = 120;
+
     spawnEnemy();
     spawnEnemy();
     
-    // Resetar timers
     timer2Bala = 0;
     
     cursor(ARROW);
