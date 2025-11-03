@@ -9,17 +9,7 @@ var enemySpawnTimer = 0;
 var enemySpawnRate = 120;
 
 function preload() {
-    bkgd = loadImage("img/background.jpg");
-    bullet1 = loadImage("img/projectile_1.png");
-    bullet2 = loadImage("img/projectile_2.png");
-    mainShipIdle = loadImage("img/main-ship-idle.gif");
-    enemy1 = loadImage("img/enemy1.gif");
-    enemy2 = loadImage("img/enemy2.gif");
-    mainShipUp = loadImage("img/main-ship-up.gif");
-    mainShipDown = loadImage("img/main-ship-down.gif");
-    healthbar = loadImage("img/health-bar.png");
-    explosion = loadImage("img/explosion.gif");
-    explosionEnemy = loadImage("img/explosionEnemy.gif");
+    LoadMedia.preloadAll();
 }
 
 function setup() {
@@ -44,13 +34,13 @@ function spawnEnemy() {
     enemy.isExploding = false;
     enemy.explosionTimer = 0;
     enemy.speed = random(1, 3);
-    enemy.sprite = random() > 0.5 ? enemy1 : enemy2;
+    enemy.sprite = random() > 0.5 ? LoadMedia.get('enemy1') : LoadMedia.get('enemy2');
     
     enemies.push(enemy);
 }
 
 function draw() {
-    background(bkgd);
+    background(LoadMedia.get('bkgd'));
     
     if (!gameOver) {
         spawnEnemiesOverTime();
@@ -85,7 +75,7 @@ function updateEnemies() {
         let enemy = enemies[i];
         
         if (enemy.isExploding) {
-            enemy.show(explosionEnemy);
+            enemy.show(LoadMedia.get('explosionEnemy'));
             enemy.explosionTimer++;
             
             if (enemy.explosionTimer > 60) {
@@ -113,7 +103,7 @@ function handleGameOver() {
     gameOverTimer++;
     
     if (gameOverTimer <= 60) {
-        player.show(explosion);
+        player.show(LoadMedia.get('explosion'));
         for (let i = 0; i < enemies.length; i++) {
             if (!enemies[i].isExploding) {
                 enemies[i].show(enemies[i].sprite);
@@ -208,11 +198,11 @@ function gamecontrol() {
     }
 
     if (isMovingUp) {
-        player.show(mainShipUp);
+        player.show(LoadMedia.get('mainShipUp'));
     } else if (isMovingDown) {
-        player.show(mainShipDown);
+        player.show(LoadMedia.get('mainShipDown'));
     } else if (player.getVidas() > 0) {
-        player.show(mainShipIdle);
+        player.show(LoadMedia.get('mainShipIdle'));
     }
 }
 
@@ -310,7 +300,7 @@ function gerenciarVidas(vidas) {
         }
         rect(1240 + i * 50, 55, 50, 20);
     }
-    image(healthbar, 1240, 35, 150, 40);
+    image(LoadMedia.get('healthbar'), 1240, 35, 150, 40);
 }
 
 function removeBullets() {

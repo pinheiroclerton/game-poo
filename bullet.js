@@ -4,13 +4,16 @@ class Bullet {
         this.y = y;
         this.type = type;
     }
+    
     show() {
+        // Usando método estático da classe LoadMedia
         if (this.type == 1) {
-            image(bullet1, this.x, this.y, 30, 10);
+            image(LoadMedia.get('bullet1'), this.x, this.y, 30, 10);
         } else {
-            image(bullet2, this.x, this.y, 20, 40);
+            image(LoadMedia.get('bullet2'), this.x, this.y, 20, 40);
         }
     }
+    
     automove(speed, enemy) {
         if(enemy) {
             this.x = this.x + speed;
