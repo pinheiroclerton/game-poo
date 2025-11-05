@@ -6,11 +6,10 @@ class Bullet {
     }
     
     show() {
-        // Usando método estático da classe LoadMedia
         if (this.type == 1) {
-            image(LoadMedia.get('bullet1'), this.x, this.y, 30, 10);
+            image(Load.get('bullet1'), this.x, this.y, 30, 10);
         } else {
-            image(LoadMedia.get('bullet2'), this.x, this.y, 20, 40);
+            image(Load.get('bullet2'), this.x, this.y, 20, 40);
         }
     }
     

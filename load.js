@@ -1,7 +1,8 @@
-class LoadMedia {
+class Load {
     static midia = {};
 
     static preloadImages() {
+        this.midia.menu = loadImage("media/img/menu.png");
         this.midia.bkgd = loadImage("media/img/background.jpg");
         this.midia.bullet1 = loadImage("media/img/projectile_1.png");
         this.midia.bullet2 = loadImage("media/img/projectile_2.png");
@@ -13,17 +14,17 @@ class LoadMedia {
         this.midia.healthbar = loadImage("media/img/health-bar.png");
         this.midia.explosion = loadImage("media/img/explosion.gif");
         this.midia.explosionEnemy = loadImage("media/img/explosionEnemy.gif");
+        this.midia.iconHealth = loadImage("media/img/icon-health.png");
+        this.midia.iconPowerUp = loadImage("media/img/icon-powerup.png");
     }
 
-    static preloadSounds() {
-        this.midia.shootSound = loadSound("media/sounds/shoot.mp3");
-        this.midia.explosionSound = loadSound("media/sounds/explosion.mp3");
-        this.midia.ultimateSound = loadSound("media/sounds/ultimate.mp3");
+    static preloadFonts() {
+        this.midia.pixelFont = loadFont("fonts/Minecraft.ttf");
     }
 
     static preloadAll() {
         this.preloadImages();
-        this.preloadSounds();
+        this.preloadFonts();
     }
 
     static get(name) {
