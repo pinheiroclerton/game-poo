@@ -3,6 +3,7 @@ class Load {
 
     static preloadImages() {
         this.midia.menu = loadImage("media/img/menu.png");
+        this.midia.menuP = loadImage("media/img/menu-p.png");
         this.midia.bkgd = loadImage("media/img/background.jpg");
         this.midia.bullet1 = loadImage("media/img/projectile_1.png");
         this.midia.bullet2 = loadImage("media/img/projectile_2.png");
@@ -16,6 +17,10 @@ class Load {
         this.midia.explosionEnemy = loadImage("media/img/explosionEnemy.gif");
         this.midia.iconHealth = loadImage("media/img/icon-health.png");
         this.midia.iconPowerUp = loadImage("media/img/icon-powerup.png");
+        this.midia.setas = loadImage("media/img/setas.png");
+        this.midia.wasd = loadImage("media/img/wasd.png");
+        this.midia.spacebar = loadImage("media/img/spacebar.png");
+        this.midia.enter = loadImage("media/img/enter.png");
     }
 
     static preloadFonts() {

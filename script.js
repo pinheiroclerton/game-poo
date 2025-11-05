@@ -1,18 +1,24 @@
-var player, ammunition, enemyAmmunition;
+var gameState = 'menu'; 
+
+var playButton, instructionsButton, creditsButton, backButton, menuButton;
+
+var player, playerAmmunition, enemyAmmunition;
+var playerBulletCount = 1;
+var ultimate;
+
 var enemies = [];
 var boss = null;
-var items = [];
-var ultimate;
-var itemSpawnTimer = 0;
-var itemSpawnRate = 300;
 var bossSpawned = false;
 var enemiesKilled = 0;
-var gameOver = false;
-var gameOverTimer = 0;
-var restartButton;
+
 var enemySpawnTimer = 0;
 var enemySpawnRate = 60;
-var playerBulletCount = 1;
+var itemSpawnTimer = 0;
+var itemSpawnRate = 300;
+
+var items = [];
+var gameOver = false;
+var gameOverTimer = 0;
 
 function preload() {
     Load.preloadAll();
@@ -20,31 +26,16 @@ function preload() {
 
 function setup() {
     createCanvas(1425, 660);
-    
     textFont(Load.get('pixelFont'));
-
-    player = new Nave(width / 2, height / 2);
-    playerAmmunition = [];
-    enemyAmmunition = [];
-    enemies = [];
-    items = [];
-    enemySpawnTimer = 0;
-    itemSpawnTimer = 0;
-    enemiesKilled = 0;
-    bossSpawned = false;
-    boss = null;
-    playerBulletCount = 1;
     
-    ultimate = new Ultimate(10000);
+    createMenuButtons();
     
-    spawnEnemy();
-    spawnEnemy();
+    initializeGame();
 }
 
 function spawnEnemy() {
     let x = random(50, width - 600);
     
-    // 50% de chance de spawnar em cima ou embaixo
     let spawnFromTop = random() > 0.5;
     let y = spawnFromTop ? random(-200, -60) : random(height + 60, height + 200);
     
@@ -55,40 +46,48 @@ function spawnEnemy() {
     enemy.explosionTimer = 0;
     enemy.speed = random(1, 3);
     enemy.sprite = random() > 0.5 ? Load.get('enemy1') : Load.get('enemy2');
-    enemy.direction = spawnFromTop ? 1 : -1; // 1 = desce, -1 = sobe
+    enemy.direction = spawnFromTop ? 1 : -1; 
     
     enemies.push(enemy);
 }
 
 function draw() {
+    if (gameState === 'menu') {
+        drawMenu();
+    } else if (gameState === 'instructions') {
+        drawInstructions();
+    } else if (gameState === 'credits') {
+        drawCredits();
+    } else if (gameState === 'playing') {
+        drawGame();
+    } else if (gameState === 'gameover') {
+        drawGameOver();
+    }
+}
+
+function drawGame() {
     background(Load.get('bkgd'));
     
-    if (!gameOver) {
-        spawnEnemiesOverTime();
-        spawnBossIfNeeded();
-        spawnItemsOverTime();
-        updateEnemies();
-        updateBoss();
-        updateItems();
-        enemyShot();
-        bossShot();
-        gamecontrol();
-        drawBullets();
-        drawEnemyBullets();
-        removeBullets();
-        
-
-        ultimate.update();
-        player.update();
-        
-
-        gerenciarVidas(player.getVidas());
-        drawUltimateBar();
-        drawScore();
-        checkGameOver();
-    } else {
-        handleGameOver();
-    }
+    spawnEnemiesOverTime();
+    spawnBossIfNeeded();
+    spawnItemsOverTime();
+    updateEnemies();
+    updateBoss();
+    updateItems();
+    enemyShot();
+    bossShot();
+    gamecontrol();
+    drawBullets();
+    drawEnemyBullets();
+    removeBullets();
+    
+    ultimate.update();
+    player.update();
+    
+    gerenciarVidas(player.getVidas());
+    drawUltimateBar();
+    drawScore();
+    checkGameOver();
 }
 
 function spawnEnemiesOverTime() {
@@ -157,11 +156,9 @@ function updateEnemies() {
         } else {
             enemy.show(enemy.sprite);
             
-            // Move o inimigo na direção correta
             let moveSpeed = enemy.speed * enemy.direction;
             enemy.setY(enemy.getY() + moveSpeed);
             
-            // Remove inimigos que saíram da tela (tanto em cima quanto embaixo)
             if (enemy.getY() > height + 100 || enemy.getY() < -100) {
                 enemies.splice(i, 1);
             }
@@ -233,7 +230,7 @@ function collectItem(item) {
             break;
         case 'power':
             playerBulletCount = 2;
-            console.log("Power-up! Agora você tem 2 balas!");
+            console.log("Power-up! Agora voce tem 2 balas!");
             break;
     }
 }
@@ -242,62 +239,8 @@ function checkGameOver() {
     if (player.getVidas() <= 0 && !gameOver) {
         gameOver = true;
         gameOverTimer = 0;
+        gameState = 'gameover';
     }
-}
-
-function handleGameOver() {
-    gameOverTimer++;
-    
-    if (gameOverTimer <= 60) {
-        player.show(Load.get('explosion'));
-        for (let i = 0; i < enemies.length; i++) {
-            if (!enemies[i].isExploding) {
-                enemies[i].show(enemies[i].sprite);
-            }
-        }
-    }
-    else {
-        fill(0, 0, 0, 200);
-        rect(0, 0, width, height);
-        
-        fill(255, 0, 0);
-        textSize(120);
-        textAlign(CENTER, CENTER);
-        textStyle(BOLD);
-        text("GAME OVER", width / 2, height / 2 - 100);
-        
-        drawRestartButton();
-    }
-}
-
-function drawRestartButton() {
-    let btnX = width / 2 - 100;
-    let btnY = height / 2 + 80;
-    let btnW = 200;
-    let btnH = 60;
-    
-    let isHover = mouseX > btnX && mouseX < btnX + btnW && 
-                  mouseY > btnY && mouseY < btnY + btnH;
-    
-    if (isHover) {
-        fill(100, 200, 100);
-        cursor(HAND);
-    } else {
-        fill(50, 150, 50);
-        cursor(ARROW);
-    }
-    
-    stroke(255);
-    strokeWeight(3);
-    rect(btnX, btnY, btnW, btnH, 10);
-    
-    fill(255);
-    noStroke();
-    textSize(28);
-    textAlign(CENTER, CENTER);
-    text("RESTART", width / 2, btnY + btnH / 2);
-    
-    restartButton = {x: btnX, y: btnY, w: btnW, h: btnH};
 }
 
 function keyPressed() {
@@ -493,7 +436,7 @@ function drawEnemyBullets() {
             
 
             playerBulletCount = 1;
-            console.log("Você foi atingido! Voltou para 1 bala.");
+            console.log("Voce foi atingido! Voltou para 1 bala.");
             
             enemyAmmunition.splice(i, 1);
         } else if (enemyAmmunition[i].getX() > width + 10) {
@@ -526,15 +469,6 @@ function removeBullets() {
     for (let i = 0; i < playerAmmunition.length; i++) {
         if (playerAmmunition[i].getX() < -5) {
             playerAmmunition.splice(i, 1);
-        }
-    }
-}
-
-function mousePressed() {
-    if (gameOver && restartButton) {
-        if (mouseX > restartButton.x && mouseX < restartButton.x + restartButton.w &&
-            mouseY > restartButton.y && mouseY < restartButton.y + restartButton.h) {
-            restartGame();
         }
     }
 }
@@ -587,23 +521,19 @@ function drawScore() {
         let bossBarX = width / 2 - bossBarW / 2;
         let bossBarY = height - 50;
         
-        // Fundo da barra
         fill(50);
         rect(bossBarX, bossBarY, bossBarW, bossBarH);
         
-        // Barra de vida
         let healthPercent = boss.getHealth() / 6;
         fill(255, 0, 0);
         rect(bossBarX, bossBarY, bossBarW * healthPercent, bossBarH);
         
-        // Barra de shield (se tiver)
         if (boss.getHasShield()) {
             let shieldPercent = boss.getShields() / 100;
             fill(0, 150, 255, 150);
             rect(bossBarX, bossBarY, bossBarW * shieldPercent, bossBarH);
         }
         
-        // Texto informativo
         fill(255);
         textSize(14);
         textAlign(CENTER);
@@ -611,29 +541,239 @@ function drawScore() {
     }
 }
 
-function restartGame() {
+function createMenuButtons() {
+    let buttonY = height - 100;
+    let buttonWidth = 200;
+    let buttonHeight = 50;
+    let spacing = 20;
+    let totalWidth = (buttonWidth * 3) + (spacing * 2);
+    let startX = (width - totalWidth) / 2;
+    
+    playButton = createButton('JOGAR');
+    playButton.position(startX, buttonY);
+    playButton.size(buttonWidth, buttonHeight);
+    playButton.style('font-size', '24px');
+    playButton.style('font-family', 'Minecraft');
+    playButton.mousePressed(startGame);
+    
+    instructionsButton = createButton('INSTRUCOES');
+    instructionsButton.position(startX + buttonWidth + spacing, buttonY);
+    instructionsButton.size(buttonWidth, buttonHeight);
+    instructionsButton.style('font-size', '24px');
+    instructionsButton.style('font-family', 'Minecraft');
+    instructionsButton.mousePressed(showInstructions);
+    
+    creditsButton = createButton('CREDITOS');
+    creditsButton.position(startX + (buttonWidth + spacing) * 2, buttonY);
+    creditsButton.size(buttonWidth, buttonHeight);
+    creditsButton.style('font-size', '24px');
+    creditsButton.style('font-family', 'Minecraft');
+    creditsButton.mousePressed(showCredits);
+    
+    backButton = createButton('VOLTAR');
+    backButton.position(width/2 - 100, height - 100);
+    backButton.size(200, 50);
+    backButton.style('font-size', '24px');
+    backButton.style('font-family', 'Minecraft');
+    backButton.mousePressed(returnToMenu);
+    backButton.hide();
+    
+    menuButton = createButton('MENU');
+    menuButton.position(width/2 - 100, height/2 + 70);
+    menuButton.size(200, 50);
+    menuButton.style('font-size', '24px');
+    menuButton.style('font-family', 'Minecraft');
+    menuButton.mousePressed(returnToMenu);
+    menuButton.hide();
+}
+
+function drawMenu() {
+    background(Load.get('menuP'));
+    
+    playButton.show();
+    instructionsButton.show();
+    creditsButton.show();
+    backButton.hide();
+    menuButton.hide();
+}
+
+function drawInstructions() {
+    background(Load.get('menu'));
+    
+    fill(0, 0, 0, 200);
+    rect(0, 0, width, height);
+    
+    playButton.hide();
+    instructionsButton.hide();
+    creditsButton.hide();
+    backButton.show();
+    menuButton.hide();
+    
+    fill(255);
+    textSize(50);
+    textAlign(CENTER);
+    text("COMO JOGAR", width/2, 80);
+    
+    textSize(22);
+    textAlign(LEFT);
+    
+    let col1X = 150;
+    let col2X = width/2 + 100;
+    let startY = 160;
+    let sectionSpacing = 180;
+    
+    fill(255, 255, 0);
+    textSize(26);
+    text("MOVIMENTACAO", col1X, startY);
+    
+    fill(255);
+    textSize(18);
+    image(Load.get('setas'), col1X, startY + 35, 120, 90);
+    image(Load.get('wasd'), col1X + 140, startY + 35, 120, 90);
+    
+    fill(255, 255, 0);
+    textSize(26);
+    text("ATAQUES", col2X, startY);
+    
+    fill(255);
+    textSize(18);
+    text("Atirar", col2X + 25, startY + 35);
+    image(Load.get('spacebar'), col2X, startY + 55, 100, 70);
+    
+    text("Ultimate", col2X + 115, startY + 35);
+    image(Load.get('enter'), col2X + 100, startY + 40, 100, 100);
+    
+    fill(255, 255, 0);
+    textSize(26);
+    text("POWER-UPS", col1X, startY + sectionSpacing);
+    
+    fill(255);
+    textSize(18);
+    image(Load.get('iconHealth'), col1X, startY + sectionSpacing + 20, 40, 40);
+    text("Vida: Recupera 1 coracao", col1X + 50, startY + sectionSpacing + 45);
+    
+    image(Load.get('iconPowerUp'), col1X, startY + sectionSpacing + 70, 40, 40);
+    text("Poder: Dispara 2 balas simultaneas", col1X + 50, startY + sectionSpacing + 95);
+    
+    fill(255, 255, 0);
+    textSize(26);
+    text("OBJETIVO", col2X, startY + sectionSpacing);
+    
+    fill(255);
+    textSize(18);
+    text("Destrua 20 inimigos", col2X + 80, startY + sectionSpacing + 50);
+    text("para enfrentar o BOSS!", col2X + 80, startY + sectionSpacing + 75);
+    
+    image(Load.get('enemy1'), col2X, startY + sectionSpacing + 15, 80, 80);
+    
+    fill(255, 100, 100);
+    textSize(16);
+    textAlign(CENTER);
+    text("* Ao ser atingido, voce perde o power-up e volta a atirar apenas 1 bala", width/2, height - 160);
+}
+
+function drawCredits() {
+    background(Load.get('menu'));
+    
+    fill(0, 0, 0, 200);
+    rect(0, 0, width, height);
+    
+    playButton.hide();
+    instructionsButton.hide();
+    creditsButton.hide();
+    backButton.show();
+    menuButton.hide();
+    
+    fill(255, 215, 0);
+    textSize(60);
+    textAlign(CENTER);
+    text("CREDITOS", width/2, 120);
+    
+    fill(100, 200, 255);
+    textSize(24);
+    text("Clerton Pinheiro", width/2, 200);
+    text("Kalyandro Fernandes", width/2, 240);
+    text("Vinicius Dantas", width/2, 280);
+    
+    fill(255);
+    textSize(22);
+    text("___________________________________", width/2, 320);
+    
+    fill(255, 255, 100);
+    textSize(24);
+    text("Projeto POO - 2025.2", width/2, 370);
+    text("Dr. Rummenigge Rudson Dantas", width/2, 420);
+    
+    fill(255);
+    textSize(18);
+    text("___________________________________", width/2, 460);
+    
+    fill(200, 200, 200);
+    textSize(16);
+    text("p5.js | JavaScript", width/2, 500);
+}
+
+function drawGameOver() {
+    background(Load.get('bkgd'));
+    
+    playButton.hide();
+    instructionsButton.hide();
+    creditsButton.hide();
+    backButton.hide();
+    
+    menuButton.show();
+    
+    fill(255, 0, 0);
+    textSize(80);
+    textAlign(CENTER);
+    text("GAME OVER", width / 2, height / 2 - 50);
+    
+    fill(255);
+    textSize(30);
+    text("Inimigos eliminados: " + enemiesKilled, width / 2, height / 2 + 20);
+}
+
+function startGame() {
+    gameState = 'playing';
+    initializeGame();
+    
+    playButton.hide();
+    instructionsButton.hide();
+    creditsButton.hide();
+    backButton.hide();
+    menuButton.hide();
+}
+
+function showInstructions() {
+    gameState = 'instructions';
+}
+
+function showCredits() {
+    gameState = 'credits';
+}
+
+function returnToMenu() {
+    gameState = 'menu';
+    gameOver = false;
+}
+
+function initializeGame() {
+    player = new Nave(width / 2, height / 2);
+    playerAmmunition = [];
+    enemyAmmunition = [];
+    enemies = [];
+    items = [];
+    enemySpawnTimer = 0;
+    itemSpawnTimer = 0;
+    enemiesKilled = 0;
+    bossSpawned = false;
+    boss = null;
+    playerBulletCount = 1;
     gameOver = false;
     gameOverTimer = 0;
     
-    player = new Nave(width / 2, height / 2);
-    
-    playerAmmunition = [];
-    enemyAmmunition = [];
-    
-    enemies = [];
-    items = [];
-    boss = null;
-    bossSpawned = false;
-    enemiesKilled = 0;
-    enemySpawnTimer = 0;
-    enemySpawnRate = 60;
-    itemSpawnTimer = 0;
-    playerBulletCount = 1;
-    
     ultimate = new Ultimate(10000);
-
-    spawnEnemy();
-    spawnEnemy();
     
-    cursor(ARROW);
+    spawnEnemy();
+    spawnEnemy();
 }
