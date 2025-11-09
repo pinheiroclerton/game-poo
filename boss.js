@@ -1,13 +1,14 @@
 class Boss extends Inimigo {
     #lifeSystem;
+    #maxHealth;
     
     constructor(x, y, l, a, health, shields) {
         super(x, y, l, a);
+        this.#maxHealth = health;
         this.#lifeSystem = new BossLife(health, shields);
-        this.ultimate = new BossUltimate(5000, 3);
+        this.ultimate = new UltimateControl(5000, 3);
         this.moveDirection = 1;
         this.speed = 2;
-        this.leftEdge = 30;
     }
     
     show(img) {
@@ -16,19 +17,19 @@ class Boss extends Inimigo {
     
     automove(speed, limit) {
         let newY = this.getY() + (this.moveDirection * this.speed);
+        newY = constrain(newY, 0 - this.getH(), height - this.getH());
         
         if (newY <= 0 - this.getH() || newY >= height - this.getH()) {
             this.moveDirection *= -1;
-            newY = constrain(newY, 0 - this.getH(), height - this.getH());
         }
         
-        this.setX(this.leftEdge);
-        this.setY(constrain(newY, 0 - this.getH(), height - this.getH()));
+        this.setX(this.getX());
+        this.setY(newY);
     }
     
     takeDamage(damage) {
         this.#lifeSystem.takeDamage(damage);
-        if (this.#lifeSystem.getCurrentLives() <= 3) {
+        if (this.#lifeSystem.getCurrentLives() <= 10) {
             this.speed = 4;
         }
     }
@@ -51,5 +52,9 @@ class Boss extends Inimigo {
     
     getHasShield() {
         return this.#lifeSystem.getHasShield();
+    }
+    
+    drawHealthBar(x, y, barWidth, barHeight) {
+        this.#lifeSystem.drawHealthBar(x, y, barWidth, barHeight, this.#maxHealth);
     }
 }

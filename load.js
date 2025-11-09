@@ -21,15 +21,26 @@ class Load {
         this.midia.wasd = loadImage("media/img/wasd.png");
         this.midia.spacebar = loadImage("media/img/spacebar.png");
         this.midia.enter = loadImage("media/img/enter.png");
+        this.midia.projectileEnemy = loadImage("media/img/projectileEnemy.png");
+        this.midia.ultBoss = loadImage("media/img/ultBoss.png");
     }
 
     static preloadFonts() {
         this.midia.pixelFont = loadFont("fonts/Minecraft.ttf");
     }
 
+    static preloadSounds() {
+        this.midia.explosionSound = loadSound("media/sounds/explosion.mp3");
+        this.midia.shootSound = loadSound("media/sounds/shoot.mp3");
+        this.midia.ultimateSound = loadSound("media/sounds/ultimate.mp3");
+        this.midia.themeSound = loadSound("media/sounds/Theme.mp3");
+        this.midia.themeBossSound = loadSound("media/sounds/ThemeBoss.mp3");
+    }
+
     static preloadAll() {
         this.preloadImages();
         this.preloadFonts();
+        this.preloadSounds();
     }
 
     static get(name) {

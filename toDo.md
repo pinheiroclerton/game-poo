@@ -1,3 +1,7 @@
+# Telas
+1. Tela de Menu
+2. Tela de Game Over
+
 # Herança
 1. 3 Classes que herdam
 2. Cada classe filho deve ter um novo atributo

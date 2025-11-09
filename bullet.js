@@ -1,47 +1,48 @@
 class Bullet {
-    constructor(x, y, type) {
-        this.x = x;
-        this.y = y;
-        this.type = type;
-    }
+    #x;
+    #y;
+    #isEnemy;
     
+    constructor(x, y, isEnemy = false) {
+        this.#x = x;
+        this.#y = y;
+        this.#isEnemy = isEnemy;
+    }
+
     show() {
-        if (this.type == 1) {
-            image(Load.get('bullet1'), this.x, this.y, 30, 10);
-        } else {
-            image(Load.get('bullet2'), this.x, this.y, 20, 40);
-        }
+        const bulletImage = this.#isEnemy ? Load.get('projectileEnemy') : Load.get('bullet1');
+        image(bulletImage, this.#x, this.#y, 30, 10);
     }
-    
+
     automove(speed, enemy) {
-        if(enemy) {
-            this.x = this.x + speed;
+        if (enemy) {
+            this.setX(this.getX() + speed);
         } else {
-            this.x = this.x - speed;
+            this.setX(this.getX() - speed);
         }
     }
 
     getX() {
-        return this.x;
+        return this.#x;
     }
 
     getY() {
-        return this.y;
+        return this.#y;
     }
-
+    
+    getIsEnemy() {
+        return this.#isEnemy;
+    }
+    
     getType() {
-        return this.type;
+        return 1;
     }
 
     setX(x) {
-        this.x = x;
+        this.#x = x;
     }
 
     setY(y) {
-        this.y = y;
-    }
-
-    setType(t) {
-        this.type = t;
+        this.#y = y;
     }
 }

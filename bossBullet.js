@@ -1,27 +1,27 @@
 class BossBullet extends Bullet {
     constructor(x, y, type, damage) {
-        super(x, y, type);
+        super(x, y, true);
+        this.type = type;
         this.damage = damage;
         this.color = 'red';
-        this.size = 1.5;
     }
     
     show() {
         push();
         tint(this.color);
         if (this.type == 1) {
-            image(Load.get('bullet1'), this.x, this.y, 45, 15);
+            image(Load.get('projectileEnemy'), this.getX(), this.getY(), 45, 15);
         } else {
-            image(Load.get('bullet2'), this.x, this.y, 30, 60);
+            image(Load.get('ultBoss'), this.getX(), this.getY(), 30, 60);
         }
         pop();
     }
     
     automove(speed, enemy) {
         if(enemy) {
-            this.x = this.x + speed * 1.5;
+            this.setX(this.getX() + speed * 1.5);
         } else {
-            this.x = this.x - speed * 1.5;
+            this.setX(this.getX() - speed * 1.5);
         }
     }
     
@@ -39,13 +39,5 @@ class BossBullet extends Bullet {
     
     setColor(color) {
         this.color = color;
-    }
-    
-    getSize() {
-        return this.size;
-    }
-    
-    setSize(size) {
-        this.size = size;
     }
 }

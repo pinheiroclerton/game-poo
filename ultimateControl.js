@@ -1,34 +1,26 @@
 class UltimateControl {
     #cooldown;
     #isReady;
+    #power;
     
-    constructor(cooldownTime) {
+    constructor(cooldownTime, power = 1) {
         this.#cooldown = cooldownTime;
         this.#isReady = true;
         this.lastUsed = 0;
-        this.duration = 3000;
-        this.active = false;
+        this.#power = power;
     }
     
     use() {
         if (this.#isReady) {
-            this.active = true;
             this.lastUsed = millis();
             this.#isReady = false;
-            
             return true;
         }
         return false;
     }
     
     update() {
-        let currentTime = millis();
-        
-        if (this.active && currentTime - this.lastUsed > this.duration) {
-            this.active = false;
-        }
-        
-        if (!this.#isReady && currentTime - this.lastUsed > this.#cooldown) {
+        if (!this.#isReady && millis() - this.lastUsed > this.#cooldown) {
             this.#isReady = true;
         }
     }
@@ -47,6 +39,14 @@ class UltimateControl {
     
     setIsReady(value) {
         this.#isReady = value;
+    }
+    
+    getPower() {
+        return this.#power;
+    }
+    
+    setPower(value) {
+        this.#power = value;
     }
     
     getRemainingCooldown() {
