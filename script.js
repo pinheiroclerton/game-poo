@@ -1,6 +1,6 @@
 var gameState = 'menu'; 
 
-var playButton, instructionsButton, creditsButton, backButton, menuButton;
+var playButton, instructionsButton, creditsButton, backButton, menuButton, winMenuButton;
 
 var player, playerAmmunition, enemyAmmunition;
 var playerBulletCount = 1;
@@ -18,7 +18,8 @@ var itemSpawnRate = 300;
 
 var items = [];
 var gameOver = false;
-var gameOverTimer = 0;
+
+var score = 0;
 
 function preload() {
     Load.preloadAll();
@@ -33,24 +34,6 @@ function setup() {
     initializeGame();
 }
 
-function spawnEnemy() {
-    let x = random(50, width - 600);
-    
-    let spawnFromTop = random() > 0.5;
-    let y = spawnFromTop ? random(-200, -60) : random(height + 60, height + 200);
-    
-    let size = random(40, 80);
-    
-    let enemy = new Inimigo(x, y, size, size);
-    enemy.isExploding = false;
-    enemy.explosionTimer = 0;
-    enemy.speed = random(1, 3);
-    enemy.sprite = random() > 0.5 ? Load.get('enemy1') : Load.get('enemy2');
-    enemy.direction = spawnFromTop ? 1 : -1; 
-    
-    enemies.push(enemy);
-}
-
 function draw() {
     if (gameState === 'menu') {
         drawMenu();
@@ -62,7 +45,30 @@ function draw() {
         drawGame();
     } else if (gameState === 'gameover') {
         drawGameOver();
+    } else if (gameState === 'win') {
+        drawWin();
     }
+}
+
+function initializeGame() {
+    player = new Nave(width / 2, height / 2);
+    playerAmmunition = [];
+    enemyAmmunition = [];
+    enemies = [];
+    items = [];
+    enemySpawnTimer = 0;
+    itemSpawnTimer = 0;
+    enemiesKilled = 0;
+    bossSpawned = false;
+    boss = null;
+    playerBulletCount = 1;
+    gameOver = false;
+    score = 0;
+    
+    ultimate = new UltimateControl(10000);
+    
+    spawnEnemy();
+    spawnEnemy();
 }
 
 function drawGame() {
@@ -82,7 +88,6 @@ function drawGame() {
     removeBullets();
     
     ultimate.update();
-    player.update();
     
     gerenciarVidas(player.getVidas());
     drawUltimateBar();
@@ -90,155 +95,9 @@ function drawGame() {
     checkGameOver();
 }
 
-function spawnEnemiesOverTime() {
-
-    if (bossSpawned && boss && boss.isAlive) return;
-    
-    enemySpawnTimer++;
-    
-    if (enemySpawnTimer >= enemySpawnRate && enemies.length < 10) {
-        spawnEnemy();
-        enemySpawnTimer = 0;
-        
-        if (enemySpawnRate > 30) {
-            enemySpawnRate -= 2;
-        }
-    }
-}
-
-function spawnBossIfNeeded() {
-    if (!bossSpawned && enemiesKilled >= 20) {
-        let x = width / 2 - 75;
-        let y = 50;
-        boss = new Boss(x, y, 150, 150, 6, 100);
-        boss.isExploding = false;
-        boss.explosionTimer = 0;
-        boss.sprite = Load.get('enemy1');
-        boss.isAlive = true;
-        bossSpawned = true;
-        console.log("Boss spawned at:", x, y);
-    }
-}
-
-function spawnItemsOverTime() {
-    itemSpawnTimer++;
-    
-    if (itemSpawnTimer >= itemSpawnRate) {
-        let x = random(50, width - 50);
-        let y = -50;
-        let types = ['health', 'power', 'shield'];
-        let type = random(types);
-        let value = type === 'health' ? 1 : 10;
-        
-        let item = new Item(x, y, type, value);
-        items.push(item);
-        itemSpawnTimer = 0;
-    }
-}
-
-function updateEnemies() {
-    for (let i = enemies.length - 1; i >= 0; i--) {
-        let enemy = enemies[i];
-        
-        if (enemy.isExploding) {
-            enemy.show(Load.get('explosionEnemy'));
-            enemy.explosionTimer++;
-            
-            if (enemy.explosionTimer > 60) {
-                enemies.splice(i, 1);
-                enemiesKilled++;
-                
-
-                if (random() < 0.3) {
-                    spawnItemAtPosition(enemy.getX(), enemy.getY());
-                }
-            }
-        } else {
-            enemy.show(enemy.sprite);
-            
-            let moveSpeed = enemy.speed * enemy.direction;
-            enemy.setY(enemy.getY() + moveSpeed);
-            
-            if (enemy.getY() > height + 100 || enemy.getY() < -100) {
-                enemies.splice(i, 1);
-            }
-        }
-    }
-}
-
-function updateBoss() {
-    if (boss && boss.isAlive) {
-        if (boss.ultimate) {
-            boss.ultimate.update();
-        }
-        
-        if (boss.isExploding) {
-            boss.show(Load.get('explosionEnemy'));
-            boss.explosionTimer++;
-            
-            if (boss.explosionTimer > 120) {
-                boss.isAlive = false;
-                boss = null;
-                spawnItemAtPosition(width / 2, height / 2);
-            }
-        } else {
-            boss.show(boss.sprite);
-            boss.automove(boss.speed, height);
-        }
-    }
-}
-
-function updateItems() {
-    for (let i = items.length - 1; i >= 0; i--) {
-        let item = items[i];
-        
-        if (!item.isCollected()) {
-            item.show();
-            item.automove(2);
-            
-
-            if (item.checkCollision(player.getX(), player.getY(), 100, 100)) {
-                collectItem(item);
-            }
-            
-
-            if (item.y > height + 50) {
-                items.splice(i, 1);
-            }
-        } else {
-            items.splice(i, 1);
-        }
-    }
-}
-
-function spawnItemAtPosition(x, y) {
-    let types = ['health', 'power'];
-    let type = random(types);
-    let value = type === 'health' ? 1 : 10;
-    
-    let item = new Item(x, y, type, value);
-    items.push(item);
-}
-
-function collectItem(item) {
-    let type = item.getType();
-    let value = item.getValue();
-    
-    switch(type) {
-        case 'health':
-            player.heal(value);
-            break;
-        case 'power':
-            playerBulletCount = 2;
-            console.log("Power-up! Agora voce tem 2 balas!");
-            break;
-    }
-}
-
 function checkGameOver() {
     if (player.getVidas() <= 0 && !gameOver) {
         gameOver = true;
-        gameOverTimer = 0;
         gameState = 'gameover';
     }
 }
@@ -257,12 +116,8 @@ function keyPressed() {
             }
         } else if (keyCode === 13) {
             if (ultimate.use()) {
-                let b = new Bullet(player.getX(), player.getY() + 30, 2);
+                let b = new PlayerUltimate(player.getX(), player.getY() + 30, 2, 4);
                 playerAmmunition.push(b);
-                console.log("Ultimate ativado!");
-            } else {
-                console.log("Ultimate em cooldown: " + 
-                    Math.ceil(ultimate.getRemainingCooldown() / 1000) + "s");
             }
         }
     }
@@ -296,6 +151,71 @@ function gamecontrol() {
     }
 }
 
+function spawnEnemy() {
+    let x = random(50, width - 600);
+    
+    let spawnFromTop = random() > 0.5;
+    let y = spawnFromTop ? random(-200, -60) : random(height + 60, height + 200);
+    
+    let size = random(40, 80);
+    
+    let enemy = new Inimigo(x, y, size, size);
+    enemy.isExploding = false;
+    enemy.explosionTimer = 0;
+    enemy.speed = random(1, 3);
+    enemy.sprite = random() > 0.5 ? Load.get('enemy1') : Load.get('enemy2');
+    enemy.direction = spawnFromTop ? 1 : -1; 
+    
+    enemies.push(enemy);
+}
+
+function spawnEnemiesOverTime() {
+
+    if (bossSpawned && boss && boss.isAlive) return;
+    
+    enemySpawnTimer++;
+    
+    if (enemySpawnTimer >= enemySpawnRate && enemies.length < 10) {
+        spawnEnemy();
+        enemySpawnTimer = 0;
+        
+        if (enemySpawnRate > 30) {
+            enemySpawnRate -= 2;
+        }
+    }
+}
+
+function updateEnemies() {
+    for (let i = enemies.length - 1; i >= 0; i--) {
+        let enemy = enemies[i];
+        
+        if (enemy.isExploding) {
+            enemy.show(Load.get('explosionEnemy'));
+            enemy.explosionTimer++;
+            
+            if (enemy.explosionTimer > 60) {
+                enemies.splice(i, 1);
+                enemiesKilled++;
+                score += 20;
+                
+
+                if (random() < 0.3) {
+                    spawnItemAtPosition(enemy.getX(), enemy.getY());
+                }
+            }
+        } else {
+            enemy.show(enemy.sprite);
+            
+            let moveSpeed = enemy.speed * enemy.direction;
+            enemy.setY(enemy.getY() + moveSpeed);
+            
+            if (enemy.getY() > height + 100 || enemy.getY() < -100) {
+                enemies.splice(i, 1);
+            }
+        }
+    }
+}
+
 function enemyShot() {
     for (let i = 0; i < enemies.length; i++) {
         let enemy = enemies[i];
@@ -307,16 +227,53 @@ function enemyShot() {
     }
 }
 
+function spawnBossIfNeeded() {
+    if (!bossSpawned && enemiesKilled >= 20) {
+        let x = width / 2 - 75;
+        let y = 50;
+        boss = new Boss(x, y, 150, 150, 6, 100);
+        boss.isExploding = false;
+        boss.explosionTimer = 0;
+        boss.sprite = Load.get('enemy1');
+        boss.isAlive = true;
+        bossSpawned = true;
+    }
+}
+
+function updateBoss() {
+    if (boss && boss.isAlive) {
+        if (boss.ultimate) {
+            boss.ultimate.update();
+        }
+        
+        if (boss.isExploding) {
+            boss.show(Load.get('explosionEnemy'));
+            boss.explosionTimer++;
+            
+            if (boss.explosionTimer > 120) {
+                boss.isAlive = false;
+                score += 300;
+                boss = null;
+                
+                gameState = 'win';
+            }
+        } else {
+            boss.show(boss.sprite);
+            boss.automove(boss.speed, height);
+        }
+    }
+}
+
 function bossShot() {
     if (boss && boss.isAlive && !boss.isExploding) {
         if (boss.ultimate.getIsReady()) {
             if (boss.ultimate.use()) {
                 for (let i = 0; i < 5; i++) {
-                    let b = new BossBullet(
+                    let b = new BossUltimateBullet(
                         boss.getX() + 75, 
                         boss.getY() + 75 + (i * 20), 
                         2, 
-                        4
+                        boss.ultimate.getPower()
                     );
                     enemyAmmunition.push(b);
                 }
@@ -332,6 +289,70 @@ function bossShot() {
                 enemyAmmunition.push(b);
             }
         }
+    }
+}
+
+function spawnItemsOverTime() {
+    itemSpawnTimer++;
+    
+    if (itemSpawnTimer >= itemSpawnRate) {
+        let x = random(50, width - 50);
+        let y = -50;
+        let types = ['health', 'power'];
+        let type = random(types);
+        let value = type === 'health' ? 1 : 10;
+        
+        let item = new Item(x, y, type, value);
+        items.push(item);
+        itemSpawnTimer = 0;
+    }
+}
+
+function spawnItemAtPosition(x, y) {
+    let types = ['health', 'power'];
+    let type = random(types);
+    let value = type === 'health' ? 1 : 10;
+    
+    let item = new Item(x, y, type, value);
+    items.push(item);
+}
+
+function updateItems() {
+    for (let i = items.length - 1; i >= 0; i--) {
+        let item = items[i];
+        
+        if (!item.isCollected()) {
+            item.show();
+            item.automove(2);
+            
+
+            if (item.checkCollision(player.getX(), player.getY(), 100, 100)) {
+                collectItem(item);
+            }
+            
+
+            if (item.y > height + 50) {
+                items.splice(i, 1);
+            }
+        } else {
+            items.splice(i, 1);
+        }
+    }
+}
+
+function collectItem(item) {
+    let type = item.getType();
+    let value = item.getValue();
+    
+    switch(type) {
+        case 'health':
+            player.heal(value);
+            score += 20;
+            break;
+        case 'power':
+            playerBulletCount = 2;
+            score += 50;
+            break;
     }
 }
 
@@ -363,8 +384,9 @@ function drawBullets() {
             }
             
             if (collision) {
-                console.log("Boss atingido!");
-                let damage = (playerAmmunition[i].getType() === 2) ? 4 : 1;
+                let damage = (playerAmmunition[i] instanceof PlayerUltimate) 
+                    ? playerAmmunition[i].getDamage() 
+                    : 1;
                 boss.takeDamage(damage);
                 
                 if (boss.getHealth() <= 0) {
@@ -396,7 +418,6 @@ function drawBullets() {
                 }
                 
                 if (collision) {
-                    console.log("Inimigo atingido!");
                     enemy.isExploding = true;
                     enemy.explosionTimer = 0;
                     hitTarget = true;
@@ -414,7 +435,7 @@ function drawBullets() {
 function drawEnemyBullets() {
     for (let i = enemyAmmunition.length - 1; i >= 0; i--) {
         enemyAmmunition[i].show();
-        enemyAmmunition[i].automove(7, true);
+        enemyAmmunition[i].automove(5, true);
 
         let hitPlayer = collideRectRect(
             enemyAmmunition[i].getX(),
@@ -428,41 +449,22 @@ function drawEnemyBullets() {
         if (hitPlayer) {
 
             let damage = 1;
-            if (enemyAmmunition[i] instanceof BossBullet) {
+            if (enemyAmmunition[i] instanceof BossBullet || enemyAmmunition[i] instanceof BossUltimateBullet) {
                 damage = enemyAmmunition[i].getDamage();
             }
             
             player.takeDamage(damage);
+            score -= 10 * damage;
+            if (score < 0) score = 0;
             
 
             playerBulletCount = 1;
-            console.log("Voce foi atingido! Voltou para 1 bala.");
             
             enemyAmmunition.splice(i, 1);
         } else if (enemyAmmunition[i].getX() > width + 10) {
             enemyAmmunition.splice(i, 1);
         }
     }
-}
-
-function gerenciarVidas(vidas) {
-    if (vidas < 0) vidas = 0;
-    if (vidas > 6) vidas = 6;
-    
-    let cor;
-    if (vidas >= 5) {
-        cor = "green";
-    } else if (vidas >= 3) {
-        cor = "yellow";
-    } else {
-        cor = "red";
-    }
-    
-    for (let i = 0; i < vidas; i++) {
-        fill(cor);
-        rect(1240 + i * 30, 55, 28, 20);
-    }
-    image(Load.get('healthbar'), 1240, 35, 180, 40);
 }
 
 function removeBullets() {
@@ -473,11 +475,31 @@ function removeBullets() {
     }
 }
 
+function gerenciarVidas(vidas) {
+    if (vidas < 0) vidas = 0;
+    if (vidas > 10) vidas = 10;
+    
+    let cor;
+    if (vidas >= 7) {
+        cor = "green";
+    } else if (vidas >= 4) {
+        cor = "yellow";
+    } else {
+        cor = "red";
+    }
+    
+    for (let i = 0; i < vidas; i++) {
+        fill(cor);
+        rect(1100 + i * 30, 55, 28, 20);
+    }
+    image(Load.get('healthbar'), 1100, 35, 300, 40);
+}
+
 function drawUltimateBar() {
 
-    let x = 1240;
-    let y = 90;
-    let w = 180;
+    let x = 1100;
+    let y = 80;
+    let w = 300;
     let h = 20;
     
 
@@ -513,7 +535,8 @@ function drawScore() {
     fill(255);
     textSize(20);
     textAlign(RIGHT);
-    text("ABATES: " + enemiesKilled, width - 70, 130);
+    text("PONTOS: " + score, width - 110, 115);
+    text("AAAAAA-ABATES: " + enemiesKilled, width - 70, 130);
     
     if (bossSpawned && boss && boss.isAlive) {
         let bossBarW = 400;
@@ -534,10 +557,10 @@ function drawScore() {
             rect(bossBarX, bossBarY, bossBarW * shieldPercent, bossBarH);
         }
         
-        fill(255);
+        fill('black');
         textSize(14);
         textAlign(CENTER);
-        text("BOSS - HP: " + boss.getHealth() + " | Shield: " + (boss.getHasShield() ? boss.getShields() : "DOWN"), width / 2, bossBarY - 10);
+        text("HP: " + boss.getHealth() + " | Escudo: " + (boss.getHasShield() ? boss.getShields() : "0"), width / 2, bossBarY - 10);
     }
 }
 
@@ -585,6 +608,14 @@ function createMenuButtons() {
     menuButton.style('font-family', 'Minecraft');
     menuButton.mousePressed(returnToMenu);
     menuButton.hide();
+    
+    winMenuButton = createButton('MENU');
+    winMenuButton.position(width/2 - 100, height/2 + 120);
+    winMenuButton.size(200, 50);
+    winMenuButton.style('font-size', '24px');
+    winMenuButton.style('font-family', 'Minecraft');
+    winMenuButton.mousePressed(returnToMenu);
+    winMenuButton.hide();
 }
 
 function drawMenu() {
@@ -595,6 +626,7 @@ function drawMenu() {
     creditsButton.show();
     backButton.hide();
     menuButton.hide();
+    winMenuButton.hide();
 }
 
 function drawInstructions() {
@@ -608,6 +640,7 @@ function drawInstructions() {
     creditsButton.hide();
     backButton.show();
     menuButton.hide();
+    winMenuButton.hide();
     
     fill(255);
     textSize(50);
@@ -638,10 +671,10 @@ function drawInstructions() {
     fill(255);
     textSize(18);
     text("Atirar", col2X + 25, startY + 35);
-    image(Load.get('spacebar'), col2X, startY + 55, 100, 70);
+    image(Load.get('spacebar'), col2X + 15, startY + 55, 70, 40);
     
     text("Ultimate", col2X + 115, startY + 35);
-    image(Load.get('enter'), col2X + 100, startY + 40, 100, 100);
+    image(Load.get('enter'), col2X + 125, startY + 50, 50, 50);
     
     fill(255, 255, 0);
     textSize(26);
@@ -650,10 +683,10 @@ function drawInstructions() {
     fill(255);
     textSize(18);
     image(Load.get('iconHealth'), col1X, startY + sectionSpacing + 20, 40, 40);
-    text("Vida: Recupera 1 coracao", col1X + 50, startY + sectionSpacing + 45);
+    text("Vida: recupera 1 de vida", col1X + 50, startY + sectionSpacing + 45);
     
     image(Load.get('iconPowerUp'), col1X, startY + sectionSpacing + 70, 40, 40);
-    text("Poder: Dispara 2 balas simultaneas", col1X + 50, startY + sectionSpacing + 95);
+    text("Poder: dispara 2 balas simultaneas", col1X + 50, startY + sectionSpacing + 95);
     
     fill(255, 255, 0);
     textSize(26);
@@ -683,6 +716,7 @@ function drawCredits() {
     creditsButton.hide();
     backButton.show();
     menuButton.hide();
+    winMenuButton.hide();
     
     fill(255, 215, 0);
     textSize(60);
@@ -720,6 +754,7 @@ function drawGameOver() {
     instructionsButton.hide();
     creditsButton.hide();
     backButton.hide();
+    winMenuButton.hide();
     
     menuButton.show();
     
@@ -730,7 +765,31 @@ function drawGameOver() {
     
     fill(255);
     textSize(30);
-    text("Inimigos eliminados: " + enemiesKilled, width / 2, height / 2 + 20);
+    text("Pontuacao: " + score, width / 2, height / 2 + 20);
+}
+
+function drawWin() {
+    background(Load.get('bkgd'));
+    
+    playButton.hide();
+    instructionsButton.hide();
+    creditsButton.hide();
+    backButton.hide();
+    menuButton.hide();
+    
+    winMenuButton.show();
+    
+    fill(0, 255, 0, 50);
+    rect(0, 0, width, height);
+    
+    fill(255, 215, 0);
+    textSize(100);
+    textAlign(CENTER);
+    text("VITORIA!", width / 2, height / 2 - 100);
+    
+    fill(255);
+    textSize(35);
+    text("PONTUACAO FINAL: " + score, width / 2, height / 2 + 30);
 }
 
 function startGame() {
@@ -742,6 +801,7 @@ function startGame() {
     creditsButton.hide();
     backButton.hide();
     menuButton.hide();
+    winMenuButton.hide();
 }
 
 function showInstructions() {
@@ -755,25 +815,4 @@ function showCredits() {
 function returnToMenu() {
     gameState = 'menu';
     gameOver = false;
-}
-
-function initializeGame() {
-    player = new Nave(width / 2, height / 2);
-    playerAmmunition = [];
-    enemyAmmunition = [];
-    enemies = [];
-    items = [];
-    enemySpawnTimer = 0;
-    itemSpawnTimer = 0;
-    enemiesKilled = 0;
-    bossSpawned = false;
-    boss = null;
-    playerBulletCount = 1;
-    gameOver = false;
-    gameOverTimer = 0;
-    
-    ultimate = new Ultimate(10000);
-    
-    spawnEnemy();
-    spawnEnemy();
 }

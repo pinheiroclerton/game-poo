@@ -1,9 +1,7 @@
 class BossBullet extends Bullet {
-    #damage;
-    
     constructor(x, y, type, damage) {
         super(x, y, type);
-        this.#damage = damage;
+        this.damage = damage;
         this.color = 'red';
         this.size = 1.5;
     }
@@ -28,11 +26,11 @@ class BossBullet extends Bullet {
     }
     
     getDamage() {
-        return this.#damage;
+        return this.damage;
     }
     
     setDamage(value) {
-        this.#damage = value;
+        this.damage = value;
     }
     
     getColor() {

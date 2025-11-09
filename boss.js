@@ -45,11 +45,11 @@ class Boss extends Inimigo {
         return this.#lifeSystem.getShields();
     }
     
-    getHasShield() {
-        return this.#lifeSystem.getHasShield();
+    setShields(value) {
+        this.#lifeSystem.setShields(value);
     }
     
-    getLifeSystem() {
-        return this.#lifeSystem;
+    getHasShield() {
+        return this.#lifeSystem.getHasShield();
     }
 }

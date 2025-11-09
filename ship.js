@@ -6,7 +6,7 @@ class Nave {
     constructor(x, y) {
         this.#xNave = x;
         this.#yNave = y;
-        this.#lifeSystem = new Life(6);
+        this.#lifeSystem = new Life(10);
     }
     
     show(img) {
@@ -43,13 +43,5 @@ class Nave {
     
     heal(amount = 1) {
         this.#lifeSystem.heal(amount);
-    }
-    
-    isAlive() {
-        return this.#lifeSystem.isAlive();
-    }
-    
-    update() {
-        this.#lifeSystem.update();
     }
 }

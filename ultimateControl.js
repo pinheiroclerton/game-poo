@@ -1,4 +1,4 @@
-class Ultimate {
+class UltimateControl {
     #cooldown;
     #isReady;
     
@@ -47,10 +47,6 @@ class Ultimate {
     
     setIsReady(value) {
         this.#isReady = value;
-    }
-    
-    isActive() {
-        return this.active;
     }
     
     getRemainingCooldown() {
