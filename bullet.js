@@ -2,7 +2,7 @@ class Bullet {
     #x;
     #y;
     #isEnemy;
-    
+
     constructor(x, y, isEnemy = false) {
         this.#x = x;
         this.#y = y;
@@ -29,11 +29,11 @@ class Bullet {
     getY() {
         return this.#y;
     }
-    
+
     getIsEnemy() {
         return this.#isEnemy;
     }
-    
+
     getType() {
         return 1;
     }

@@ -1,4 +1,4 @@
-class Inimigo extends Nave{
+class Inimigo extends Nave {
     #w;
     #h;
 
@@ -7,9 +7,11 @@ class Inimigo extends Nave{
         this.#w = l;
         this.#h = a;
     }
+
     show(img) {
         image(img, this.getX(), this.getY(), this.getW(), this.getH());
     }
+    
     automove(speed, limit) {
         this.setY(this.getY() + speed);
         if (this.getY() > limit) {

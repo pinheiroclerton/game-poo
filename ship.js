@@ -2,13 +2,13 @@ class Nave {
     #xNave;
     #yNave;
     #lifeSystem;
-    
+
     constructor(x, y) {
         this.#xNave = x;
         this.#yNave = y;
         this.#lifeSystem = new Life(10);
     }
-    
+
     show(img) {
         image(img, this.#xNave, this.#yNave, 100, 100);
     }
@@ -36,11 +36,11 @@ class Nave {
     setVidas(v) {
         this.#lifeSystem.setCurrentLives(v);
     }
-    
+
     takeDamage(amount = 1) {
         return this.#lifeSystem.takeDamage(amount);
     }
-    
+
     heal(amount = 1) {
         this.#lifeSystem.heal(amount);
     }

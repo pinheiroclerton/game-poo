@@ -5,7 +5,7 @@ class BossBullet extends Bullet {
         this.damage = damage;
         this.color = 'red';
     }
-    
+
     show() {
         push();
         tint(this.color);
@@ -16,27 +16,27 @@ class BossBullet extends Bullet {
         }
         pop();
     }
-    
+
     automove(speed, enemy) {
-        if(enemy) {
+        if (enemy) {
             this.setX(this.getX() + speed * 1.5);
         } else {
             this.setX(this.getX() - speed * 1.5);
         }
     }
-    
+
     getDamage() {
         return this.damage;
     }
-    
+
     setDamage(value) {
         this.damage = value;
     }
-    
+
     getColor() {
         return this.color;
     }
-    
+
     setColor(color) {
         this.color = color;
     }
