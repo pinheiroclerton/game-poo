@@ -21,6 +21,9 @@ var itemSpawnTimer = 0;
 var itemSpawnRate = 300;
 var items = [];
 
+var lastShootButton = false;
+var lastUltimateButton = false;
+
 function preload() {
     Load.preloadAll();
 }
@@ -127,6 +130,54 @@ function keyPressed() {
 function gamecontrol() {
     let isMovingUp = false;
     let isMovingDown = false;
+
+    let gp = navigator.getGamepads();
+
+    if (gp[0]) {
+        if ((gp[0].axes[1] < -0.2) && player.getY() > 0) {
+            player.setY(player.getY() - 5);
+            isMovingUp = true;
+        }
+        if ((gp[0].axes[1] > 0.2) && player.getY() < height - 100) {
+            player.setY(player.getY() + 5);
+            isMovingDown = true;
+        }
+        if ((gp[0].axes[0] < -0.2) && player.getX() > 0) {
+            player.setX(player.getX() - 5);
+        }
+        if ((gp[0].axes[0] > 0.2) && player.getX() < width - 100) {
+            player.setX(player.getX() + 5);
+        }
+
+        if (player.getVidas() > 0) {
+            if (gp[0].buttons[1].pressed && !lastShootButton) {
+                Load.get('shootSound').play();
+                if (playerBulletCount === 1) {
+                    let b = new Bullet(player.getX(), player.getY() + 45);
+                    playerAmmunition.push(b);
+                } else if (playerBulletCount >= 2) {
+                    let b1 = new Bullet(player.getX(), player.getY() + 25);
+                    let b2 = new Bullet(player.getX(), player.getY() + 65);
+                    playerAmmunition.push(b1);
+                    playerAmmunition.push(b2);
+                }
+                lastShootButton = true;
+            } else if (!gp[0].buttons[1].pressed) {
+                lastShootButton = false;
+            }
+
+            if (gp[0].buttons[2].pressed && !lastUltimateButton) {
+                if (ultimate.use()) {
+                    Load.get('ultimateSound').play();
+                    let b = new UltimateBullet(player.getX(), player.getY() + 30, 2, 4);
+                    playerAmmunition.push(b);
+                }
+                lastUltimateButton = true;
+            } else if (!gp[0].buttons[2].pressed) {
+                lastUltimateButton = false;
+            }
+        }
+    }
 
     if ((keyIsDown(87) || keyIsDown(UP_ARROW)) && player.getY() > 0) {
         player.setY(player.getY() - 5);
@@ -286,20 +337,20 @@ function bossShot() {
                 bossLastShot = millis();
             }
 
-        /*
-        } else if (random() < 0.05) {
-            for (let i = 0; i < 3; i++) {
-                let b = new BossBullet(
-                    boss.getX() + 75,
-                    boss.getY() + 75 + (i * 30),
-                    1,
-                    1
-                );
-                enemyAmmunition.push(b);
+            /*
+            } else if (random() < 0.05) {
+                for (let i = 0; i < 3; i++) {
+                    let b = new BossBullet(
+                        boss.getX() + 75,
+                        boss.getY() + 75 + (i * 30),
+                        1,
+                        1
+                    );
+                    enemyAmmunition.push(b);
+                }
+                  bossLastShot = millis();
             }
-              bossLastShot = millis();
-        }
-        */
+            */
 
         } else if (millis() - bossLastShot >= 500) {
             for (let i = 0; i < 3; i++) {
