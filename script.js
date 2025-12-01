@@ -23,6 +23,7 @@ var items = [];
 
 var lastShootButton = false;
 var lastUltimateButton = false;
+var lastMenuButton = false;
 
 function preload() {
     Load.preloadAll();
@@ -70,12 +71,21 @@ function initializeGame() {
 
     ultimate = new UltimateControl(10000);
 
+    Load.get('themeSound').loop();
+
     spawnEnemy();
     spawnEnemy();
 }
 
 function drawGame() {
     background(Load.get('bkgd'));
+
+    playButton.hide();
+    instructionsButton.hide();
+    creditsButton.hide();
+    backButton.hide();
+    menuButton.hide();
+    winMenuButton.hide();
 
     spawnEnemiesOverTime();
     bossSpawn();
@@ -105,8 +115,28 @@ function checkGameOver() {
 }
 
 function keyPressed() {
-    if (player.getVidas() > 0) {
-        if (keyCode === 32) {
+    if (gameState !== 'playing' && keyCode == 32 && !lastMenuButton) {
+        if (gameState === 'menu') {
+            showInstructions();
+        } else if (gameState === 'instructions') {
+            startGame();
+        } else if (gameState === 'credits') {
+            returnToMenu();
+        } else if (gameState === 'gameover') {
+            showCredits();
+        } else if (gameState === 'win') {
+            showCredits();
+        }
+        lastMenuButton = true;
+    } else if (keyCode != 32) {
+        lastMenuButton = false;
+    }
+
+    if (gameState === 'playing' && player.getVidas() > 0) {
+        //if (keyCode === 27) {
+        //    gameState = 'pause';
+        //} else 
+            if (keyCode === 32) {
             Load.get('shootSound').play();
             if (playerBulletCount === 1) {
                 let b = new Bullet(player.getX(), player.getY() + 45);
@@ -625,25 +655,25 @@ function createMenuButtons() {
     let startX = (width - totalWidth) / 2;
 
     playButton = createButton('JOGAR');
-    playButton.position(startX, buttonY);
+    playButton.position(width / 2 - 100, height - 100);
     playButton.size(buttonWidth, buttonHeight);
     playButton.style('font-size', '24px');
     playButton.style('font-family', 'Minecraft');
-    playButton.mousePressed(startGame);
+    playButton.mousePressed(showInstructions);
 
-    instructionsButton = createButton('INSTRUCOES');
-    instructionsButton.position(startX + buttonWidth + spacing, buttonY);
+    instructionsButton = createButton('PROSSEGUIR');
+    instructionsButton.position(width / 2 - 100, height - 100);
     instructionsButton.size(buttonWidth, buttonHeight);
     instructionsButton.style('font-size', '24px');
     instructionsButton.style('font-family', 'Minecraft');
-    instructionsButton.mousePressed(showInstructions);
+    instructionsButton.mousePressed(startGame);
 
-    creditsButton = createButton('CREDITOS');
-    creditsButton.position(startX + (buttonWidth + spacing) * 2, buttonY);
+    creditsButton = createButton('MENU');
+    creditsButton.position(width / 2 - 100, height - 100);
     creditsButton.size(buttonWidth, buttonHeight);
     creditsButton.style('font-size', '24px');
     creditsButton.style('font-family', 'Minecraft');
-    creditsButton.mousePressed(showCredits);
+    creditsButton.mousePressed(returnToMenu);
 
     backButton = createButton('VOLTAR');
     backButton.position(width / 2 - 100, height - 100);
@@ -653,30 +683,52 @@ function createMenuButtons() {
     backButton.mousePressed(returnToMenu);
     backButton.hide();
 
-    menuButton = createButton('MENU');
+    menuButton = createButton('PROSSEGUIR');
     menuButton.position(width / 2 - 100, height / 2 + 70);
     menuButton.size(200, 50);
     menuButton.style('font-size', '24px');
     menuButton.style('font-family', 'Minecraft');
-    menuButton.mousePressed(returnToMenu);
+    menuButton.mousePressed(showCredits);
     menuButton.hide();
 
-    winMenuButton = createButton('MENU');
+    winMenuButton = createButton('PROSSEGUIR');
     winMenuButton.position(width / 2 - 100, height / 2 + 120);
     winMenuButton.size(200, 50);
     winMenuButton.style('font-size', '24px');
     winMenuButton.style('font-family', 'Minecraft');
-    winMenuButton.mousePressed(returnToMenu);
+    winMenuButton.mousePressed(showCredits);
     winMenuButton.hide();
 }
 
-function drawMenu() {
+function menuGamepadControl() {
+    let gp = navigator.getGamepads();
+
+    if (gp[0]) {
+        if (gp[0].buttons[1].pressed && !lastMenuButton) {
+            if (gameState === 'menu') {
+                showInstructions();
+            } else if (gameState === 'instructions') {
+                startGame();
+            } else if (gameState === 'credits') {
+                returnToMenu();
+            } else if (gameState === 'gameover') {
+                showCredits();
+            } else if (gameState === 'win') {
+                showCredits();
+            }
+            lastMenuButton = true;
+        } else if (!gp[0].buttons[1].pressed) {
+            lastMenuButton = false;
+        }
+    }
+} function drawMenu() {
     background(Load.get('menuP'));
 
+    menuGamepadControl();
+
     playButton.show();
-    instructionsButton.show();
-    creditsButton.show();
-    backButton.hide();
+    instructionsButton.hide();
+    creditsButton.hide();
     menuButton.hide();
     winMenuButton.hide();
 }
@@ -687,10 +739,12 @@ function drawInstructions() {
     fill(0, 0, 0, 200);
     rect(0, 0, width, height);
 
+    menuGamepadControl();
+
     playButton.hide();
-    instructionsButton.hide();
+    instructionsButton.show();
     creditsButton.hide();
-    backButton.show();
+    backButton.hide();
     menuButton.hide();
     winMenuButton.hide();
 
@@ -763,10 +817,12 @@ function drawCredits() {
     fill(0, 0, 0, 200);
     rect(0, 0, width, height);
 
+    menuGamepadControl();
+
     playButton.hide();
     instructionsButton.hide();
-    creditsButton.hide();
-    backButton.show();
+    creditsButton.show();
+    backButton.hide();
     menuButton.hide();
     winMenuButton.hide();
 
@@ -802,6 +858,8 @@ function drawCredits() {
 function drawGameOver() {
     background(Load.get('bkgd'));
 
+    menuGamepadControl();
+
     playButton.hide();
     instructionsButton.hide();
     creditsButton.hide();
@@ -822,6 +880,8 @@ function drawGameOver() {
 
 function drawWin() {
     background(Load.get('bkgd'));
+
+    menuGamepadControl();
 
     playButton.hide();
     instructionsButton.hide();
@@ -849,7 +909,6 @@ function startGame() {
     initializeGame();
 
     Load.get('themeBossSound').stop();
-    Load.get('themeSound').loop();
 
     playButton.hide();
     instructionsButton.hide();
