@@ -24,6 +24,10 @@ var items = [];
 var lastShootButton = false;
 var lastUltimateButton = false;
 var lastMenuButton = false;
+var gamePaused = false;
+var lastPauseButton = false;
+var lastEscKey = false;
+var gameStartDelay = 0;
 
 function preload() {
     Load.preloadAll();
@@ -68,6 +72,12 @@ function initializeGame() {
     playerBulletCount = 1;
     gameOver = false;
     score = 0;
+    gamePaused = false;
+    
+    lastShootButton = false;
+    lastUltimateButton = false;
+    lastMenuButton = false;
+    gameStartDelay = 30;
 
     ultimate = new UltimateControl(10000);
 
@@ -87,23 +97,35 @@ function drawGame() {
     menuButton.hide();
     winMenuButton.hide();
 
-    spawnEnemiesOverTime();
-    bossSpawn();
-    spawnItemsOverTime();
-    updateEnemies();
-    updateBoss();
-    updateItems();
-    enemyShot();
-    bossShot();
+    checkPause();
+    
+    if (gameStartDelay > 0) {
+        gameStartDelay--;
+    }
+
+    if (!gamePaused) {
+        spawnEnemiesOverTime();
+        bossSpawn();
+        spawnItemsOverTime();
+        updateEnemies();
+        updateBoss();
+        updateItems();
+        enemyShot();
+        bossShot();
+        drawBullets();
+        drawEnemyBullets();
+        ultimate.update();
+    }
+
     gamecontrol();
-    drawBullets();
-    drawEnemyBullets();
-
-    ultimate.update();
-
     gerenciarVidas(player.getVidas());
     drawUltimateBar();
     drawScore();
+    
+    if (gamePaused) {
+        drawPauseOverlay();
+    }
+    
     checkGameOver();
 }
 
@@ -158,6 +180,13 @@ function keyPressed() {
 }
 
 function gamecontrol() {
+    if (gamePaused) {
+        if (player.getVidas() > 0) {
+            player.show(Load.get('mainShipIdle'));
+        }
+        return;
+    }
+
     let isMovingUp = false;
     let isMovingDown = false;
 
@@ -179,7 +208,7 @@ function gamecontrol() {
             player.setX(player.getX() + 5);
         }
 
-        if (player.getVidas() > 0) {
+        if (player.getVidas() > 0 && !gamePaused && gameStartDelay === 0) {
             if (gp[0].buttons[1].pressed && !lastShootButton) {
                 Load.get('shootSound').play();
                 if (playerBulletCount === 1) {
@@ -644,6 +673,68 @@ function drawScore() {
 
         boss.drawHealthBar(bossBarX, bossBarY, bossBarW, bossBarH);
     }
+}
+
+function checkPause() {
+    let gp = navigator.getGamepads();
+    
+    if (keyIsDown(27) && !lastEscKey) {
+        gamePaused = !gamePaused;
+        
+        if (gamePaused) {
+            if (Load.get('themeSound').isPlaying()) {
+                Load.get('themeSound').pause();
+            }
+            if (Load.get('themeBossSound').isPlaying()) {
+                Load.get('themeBossSound').pause();
+            }
+        } else {
+            if (bossSpawned && boss && boss.isAlive) {
+                Load.get('themeBossSound').play();
+            } else {
+                Load.get('themeSound').play();
+            }
+        }
+        lastEscKey = true;
+    } else if (!keyIsDown(27)) {
+        lastEscKey = false;
+    }
+    
+    if (gp[0] && gp[0].buttons[9].pressed && !lastPauseButton) {
+        gamePaused = !gamePaused;
+        
+        if (gamePaused) {
+            if (Load.get('themeSound').isPlaying()) {
+                Load.get('themeSound').pause();
+            }
+            if (Load.get('themeBossSound').isPlaying()) {
+                Load.get('themeBossSound').pause();
+            }
+        } else {
+            if (bossSpawned && boss && boss.isAlive) {
+                Load.get('themeBossSound').play();
+            } else {
+                Load.get('themeSound').play();
+            }
+        }
+        lastPauseButton = true;
+    } else if (!gp[0] || !gp[0].buttons[9].pressed) {
+        lastPauseButton = false;
+    }
+}
+
+function drawPauseOverlay() {
+    fill(0, 0, 0, 150);
+    rect(0, 0, width, height);
+    
+    fill(255, 255, 0);
+    textSize(80);
+    textAlign(CENTER);
+    text("PAUSADO", width/2, height/2 - 50);
+    
+    fill(255);
+    textSize(24);
+    text("Pressione ESC ou START para continuar", width/2, height/2 + 50);
 }
 
 function createMenuButtons() {
