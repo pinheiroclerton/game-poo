@@ -150,15 +150,14 @@ function keyPressed() {
             showCredits();
         }
         lastMenuButton = true;
-    } else if (keyCode != 32) {
+    }
+    
+    if (keyCode != 32) {
         lastMenuButton = false;
     }
 
-    if (gameState === 'playing' && player.getVidas() > 0) {
-        //if (keyCode === 27) {
-        //    gameState = 'pause';
-        //} else 
-            if (keyCode === 32) {
+    if (gameState === 'playing' && player && player.getVidas() > 0 && !gamePaused && gameStartDelay === 0) {
+        if (keyCode === 32) {
             Load.get('shootSound').play();
             if (playerBulletCount === 1) {
                 let b = new Bullet(player.getX(), player.getY() + 45);
@@ -176,6 +175,12 @@ function keyPressed() {
                 playerAmmunition.push(b);
             }
         }
+    }
+}
+
+function keyReleased() {
+    if (keyCode === 32) {
+        lastMenuButton = false;
     }
 }
 
@@ -1011,15 +1016,18 @@ function startGame() {
 
 function showInstructions() {
     gameState = 'instructions';
+    lastMenuButton = false;
 }
 
 function showCredits() {
     gameState = 'credits';
+    lastMenuButton = false;
 }
 
 function returnToMenu() {
     gameState = 'menu';
     gameOver = false;
+    lastMenuButton = false;
 
     Load.get('themeSound').stop();
     Load.get('themeBossSound').stop();
