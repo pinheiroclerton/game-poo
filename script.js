@@ -5,8 +5,12 @@ var score = 0;
 var playButton, instructionsButton, creditsButton, backButton, menuButton, winMenuButton;
 
 var player, playerAmmunition;
+var player2, player2Ammunition;
+var player2Visible = false;
 var playerBulletCount = 1;
+var player2BulletCount = 1;
 var ultimate;
+var ultimate2;
 
 var enemies = [];
 var enemyAmmunition;
@@ -23,6 +27,8 @@ var items = [];
 
 var lastShootButton = false;
 var lastUltimateButton = false;
+var lastPlayer2Shoot = false;
+var lastPlayer2Ultimate = false;
 var lastMenuButton = false;
 var gamePaused = false;
 var lastPauseButton = false;
@@ -59,8 +65,10 @@ function draw() {
 }
 
 function initializeGame() {
-    player = new Nave(width - 200, height / 2);
+    player = new Nave(width - 200, (height / 2) + 50);
+    player2 = new Nave(width - 200, (height / 2) - 50);
     playerAmmunition = [];
+    player2Ammunition = [];
     enemyAmmunition = [];
     enemies = [];
     items = [];
@@ -73,13 +81,16 @@ function initializeGame() {
     gameOver = false;
     score = 0;
     gamePaused = false;
-    
+
     lastShootButton = false;
     lastUltimateButton = false;
+    lastPlayer2Shoot = false;
+    lastPlayer2Ultimate = false;
     lastMenuButton = false;
     gameStartDelay = 30;
 
     ultimate = new UltimateControl(10000);
+    ultimate2 = new UltimateControl(10000);
 
     Load.get('themeSound').loop();
 
@@ -98,7 +109,7 @@ function drawGame() {
     winMenuButton.hide();
 
     checkPause();
-    
+
     if (gameStartDelay > 0) {
         gameStartDelay--;
     }
@@ -113,24 +124,44 @@ function drawGame() {
         enemyShot();
         bossShot();
         drawBullets();
+        if (player2Visible) {
+            drawPlayer2Bullets();
+        }
         drawEnemyBullets();
         ultimate.update();
+        if (player2Visible) {
+            ultimate2.update();
+        }
+        checkLife();
     }
 
     gamecontrol();
     gerenciarVidas(player.getVidas());
     drawUltimateBar();
     drawScore();
-    
+
     if (gamePaused) {
         drawPauseOverlay();
     }
-    
+
     checkGameOver();
 }
 
+function checkLife() {
+    if (player.getVidas() <= 0) {
+        player.setVidas(0);
+    }
+    if (player2.getVidas() <= 0) {
+        player2.setVidas(0);
+    }
+}
+
 function checkGameOver() {
-    if (player.getVidas() <= 0 && !gameOver) {
+    if (!player2Visible && player.getVidas() <= 0 && !gameOver) {
+        gameOver = true;
+        gameState = 'gameover';
+    }
+    else if (player2Visible && player.getVidas() <= 0 && player2.getVidas() <= 0 && !gameOver) {
         gameOver = true;
         gameState = 'gameover';
     }
@@ -151,13 +182,20 @@ function keyPressed() {
         }
         lastMenuButton = true;
     }
-    
+
     if (keyCode != 32) {
         lastMenuButton = false;
     }
 
+    if (keyCode === 80 && gameState === 'playing') {
+        player2Visible = !player2Visible;
+        if (player2Visible) {
+            player2.setVidas(10);
+        }
+    }
+
     if (gameState === 'playing' && player && player.getVidas() > 0 && !gamePaused && gameStartDelay === 0) {
-        if (keyCode === 32) {
+        if (keyCode === 67 && !lastShootButton) {
             Load.get('shootSound').play();
             if (playerBulletCount === 1) {
                 let b = new Bullet(player.getX(), player.getY() + 45);
@@ -168,12 +206,37 @@ function keyPressed() {
                 playerAmmunition.push(b1);
                 playerAmmunition.push(b2);
             }
-        } else if (keyCode === 13) {
+            lastShootButton = true;
+        } else if (keyCode === 86 && !lastUltimateButton) {
             if (ultimate.use()) {
                 Load.get('ultimateSound').play();
                 let b = new UltimateBullet(player.getX(), player.getY() + 30, 2, 4);
                 playerAmmunition.push(b);
             }
+            lastUltimateButton = true;
+        }
+    }
+
+    if (gameState === 'playing' && player2Visible && player2 && player2.getVidas() > 0 && !gamePaused && gameStartDelay === 0) {
+        if (keyCode === 78 && !lastPlayer2Shoot) {
+            Load.get('shootSound').play();
+            if (player2BulletCount === 1) {
+                let b = new Bullet(player2.getX(), player2.getY() + 45);
+                player2Ammunition.push(b);
+            } else if (player2BulletCount >= 2) {
+                let b1 = new Bullet(player2.getX(), player2.getY() + 25);
+                let b2 = new Bullet(player2.getX(), player2.getY() + 65);
+                player2Ammunition.push(b1);
+                player2Ammunition.push(b2);
+            }
+            lastPlayer2Shoot = true;
+        } else if (keyCode === 77 && !lastPlayer2Ultimate) {
+            if (ultimate2.use()) {
+                Load.get('ultimateSound').play();
+                let b = new UltimateBullet(player2.getX(), player2.getY() + 30, 2, 4);
+                player2Ammunition.push(b);
+            }
+            lastPlayer2Ultimate = true;
         }
     }
 }
@@ -182,6 +245,18 @@ function keyReleased() {
     if (keyCode === 32) {
         lastMenuButton = false;
     }
+    if (keyCode === 67) {
+        lastShootButton = false;
+    }
+    if (keyCode === 86) {
+        lastUltimateButton = false;
+    }
+    if (keyCode === 78) {
+        lastPlayer2Shoot = false;
+    }
+    if (keyCode === 77) {
+        lastPlayer2Ultimate = false;
+    }
 }
 
 function gamecontrol() {
@@ -189,22 +264,27 @@ function gamecontrol() {
         if (player.getVidas() > 0) {
             player.show(Load.get('mainShipIdle'));
         }
+        if (player2.getVidas() > 0) {
+            player2.show(Load.get('mainShipIdle'));
+        }
         return;
     }
 
-    let isMovingUp = false;
-    let isMovingDown = false;
+    let p1IsMovingUp = false;
+    let p1IsMovingDown = false;
+    let p2IsMovingUp = false;
+    let p2IsMovingDown = false;
 
     let gp = navigator.getGamepads();
 
     if (gp[0]) {
         if ((gp[0].axes[1] < -0.2) && player.getY() > 0) {
             player.setY(player.getY() - 5);
-            isMovingUp = true;
+            p1IsMovingUp = true;
         }
         if ((gp[0].axes[1] > 0.2) && player.getY() < height - 100) {
             player.setY(player.getY() + 5);
-            isMovingDown = true;
+            p1IsMovingDown = true;
         }
         if ((gp[0].axes[0] < -0.2) && player.getX() > 0) {
             player.setX(player.getX() - 5);
@@ -243,30 +323,60 @@ function gamecontrol() {
         }
     }
 
-    if ((keyIsDown(87) || keyIsDown(UP_ARROW)) && player.getY() > 0) {
-        player.setY(player.getY() - 5);
-        isMovingUp = true;
-    }
-    if ((keyIsDown(83) || keyIsDown(DOWN_ARROW)) && player.getY() < height - 100) {
-        player.setY(player.getY() + 5);
-        isMovingDown = true;
-    }
-    if ((keyIsDown(65) || keyIsDown(LEFT_ARROW)) && player.getX() > 0) {
-        player.setX(player.getX() - 5);
-    }
-    if ((keyIsDown(68) || keyIsDown(RIGHT_ARROW)) && player.getX() < width - 100) {
-        player.setX(player.getX() + 5);
+    if (player.getVidas() > 0) {
+        if (keyIsDown(87) && player.getY() > 0) {
+            player.setY(player.getY() - 5);
+            p1IsMovingUp = true;
+        }
+        if (keyIsDown(83) && player.getY() < height - 100) {
+            player.setY(player.getY() + 5);
+            p1IsMovingDown = true;
+        }
+        if (keyIsDown(65) && player.getX() > 0) {
+            player.setX(player.getX() - 5);
+        }
+        if (keyIsDown(68) && player.getX() < width - 100) {
+            player.setX(player.getX() + 5);
+        }
     }
 
-    if (isMovingUp) {
-        player.show(Load.get('mainShipUp'));
-    } else if (isMovingDown) {
-        player.show(Load.get('mainShipDown'));
-    } else if (player.getVidas() > 0) {
-        player.show(Load.get('mainShipIdle'));
+    if (player2Visible && player2.getVidas() > 0) {
+        if (keyIsDown(UP_ARROW) && player2.getY() > 0) {
+            player2.setY(player2.getY() - 5);
+            p2IsMovingUp = true;
+        }
+        if (keyIsDown(DOWN_ARROW) && player2.getY() < height - 100) {
+            player2.setY(player2.getY() + 5);
+            p2IsMovingDown = true;
+        }
+        if (keyIsDown(LEFT_ARROW) && player2.getX() > 0) {
+            player2.setX(player2.getX() - 5);
+        }
+        if (keyIsDown(RIGHT_ARROW) && player2.getX() < width - 100) {
+            player2.setX(player2.getX() + 5);
+        }
+    }
+
+    if (player.getVidas() > 0) {
+        if (p1IsMovingUp) {
+            player.show(Load.get('mainShipUp'));
+        } else if (p1IsMovingDown) {
+            player.show(Load.get('mainShipDown'));
+        } else {
+            player.show(Load.get('mainShipIdle'));
+        }
+    }
+
+    if (player2Visible && player2.getVidas() > 0) {
+        if (p2IsMovingUp) {
+            player2.show(Load.get('mainShipUp'));
+        } else if (p2IsMovingDown) {
+            player2.show(Load.get('mainShipDown'));
+        } else {
+            player2.show(Load.get('mainShipIdle'));
+        }
     }
 }
-
 function spawnEnemy() {
     let x = random(50, width - 600);
 
@@ -465,11 +575,12 @@ function updateItems() {
             item.show();
             item.automove(2);
 
-
-            if (item.checkCollision(player.getX(), player.getY(), 100, 100)) {
-                collectItem(item);
+            if (player.getVidas() > 0 && item.checkCollision(player.getX(), player.getY(), 100, 100)) {
+                collectItem(item, 1);
             }
-
+            else if (player2Visible && player2.getVidas() > 0 && item.checkCollision(player2.getX(), player2.getY(), 100, 100)) {
+                collectItem(item, 2);
+            }
 
             if (item.getY() > height + 50) {
                 items.splice(i, 1);
@@ -480,17 +591,25 @@ function updateItems() {
     }
 }
 
-function collectItem(item) {
+function collectItem(item, playerNumber) {
     let type = item.getType();
     let value = item.getValue();
 
     switch (type) {
         case 'health':
-            player.heal(value);
+            if (playerNumber === 1) {
+                player.heal(value);
+            } else if (playerNumber === 2) {
+                player2.heal(value);
+            }
             score += 20;
             break;
         case 'power':
-            playerBulletCount = 2;
+            if (playerNumber === 1) {
+                playerBulletCount = 2;
+            } else if (playerNumber === 2) {
+                player2BulletCount = 2;
+            }
             score += 50;
             break;
     }
@@ -572,22 +691,112 @@ function drawBullets() {
     }
 }
 
+function drawPlayer2Bullets() {
+    for (let i = player2Ammunition.length - 1; i >= 0; i--) {
+        if (player2Ammunition[i].getType() == 1) {
+            player2Ammunition[i].show();
+            player2Ammunition[i].automove(7, false);
+        } else {
+            player2Ammunition[i].show();
+            player2Ammunition[i].automove(10, false);
+        }
+
+        let hitTarget = false;
+
+        if (boss && boss.isAlive && !boss.isExploding) {
+            let collision = false;
+            if (player2Ammunition[i].getType() == 1) {
+                collision = collideRectRect(
+                    player2Ammunition[i].getX(), player2Ammunition[i].getY(), 30, 10,
+                    boss.getX(), boss.getY(), 150, 150
+                );
+            } else {
+                collision = collideRectRect(
+                    player2Ammunition[i].getX(), player2Ammunition[i].getY(), 20, 40,
+                    boss.getX(), boss.getY(), 150, 150
+                );
+            }
+
+            if (collision) {
+                let damage = (player2Ammunition[i] instanceof UltimateBullet)
+                    ? player2Ammunition[i].getDamage()
+                    : 1;
+                boss.takeDamage(damage);
+
+                if (boss.getHealth() <= 0) {
+                    Load.get('explosionSound').play();
+                    boss.isExploding = true;
+                    boss.explosionTimer = 0;
+                }
+                hitTarget = true;
+            }
+        }
+
+        if (!hitTarget) {
+            for (let j = 0; j < enemies.length; j++) {
+                let enemy = enemies[j];
+
+                if (enemy.isExploding) continue;
+
+                let collision = false;
+                if (player2Ammunition[i].getType() == 1) {
+                    collision = collideRectRect(
+                        player2Ammunition[i].getX(), player2Ammunition[i].getY(), 30, 10,
+                        enemy.getX(), enemy.getY(), enemy.getW(), enemy.getH()
+                    );
+                } else {
+                    collision = collideRectRect(
+                        player2Ammunition[i].getX(), player2Ammunition[i].getY(), 20, 40,
+                        enemy.getX(), enemy.getY(), enemy.getW(), enemy.getH()
+                    );
+                }
+
+                if (collision) {
+                    Load.get('explosionSound').play();
+                    enemy.isExploding = true;
+                    enemy.explosionTimer = 0;
+                    hitTarget = true;
+                    break;
+                }
+            }
+        }
+
+        if (hitTarget || player2Ammunition[i].getX() < -5) {
+            player2Ammunition.splice(i, 1);
+        }
+    }
+}
+
 function drawEnemyBullets() {
     for (let i = enemyAmmunition.length - 1; i >= 0; i--) {
         enemyAmmunition[i].show();
         enemyAmmunition[i].automove(5, true);
 
-        let hitPlayer = collideRectRect(
-            enemyAmmunition[i].getX(),
-            enemyAmmunition[i].getY(),
-            30, 10,
-            player.getX(),
-            player.getY(),
-            100, 100
-        );
+        let hitPlayer1 = false;
+        if (player.getVidas() > 0) {
+            hitPlayer1 = collideRectRect(
+                enemyAmmunition[i].getX(),
+                enemyAmmunition[i].getY(),
+                30, 10,
+                player.getX(),
+                player.getY(),
+                100, 100
+            );
+        }
 
-        if (hitPlayer) {
+        let hitPlayer2 = false;
+        if (player2Visible && player2.getVidas() > 0) {
+            hitPlayer2 = collideRectRect(
+                enemyAmmunition[i].getX(),
+                enemyAmmunition[i].getY(),
+                30, 10,
+                player2.getX(),
+                player2.getY(),
+                100, 100
+            );
+        }
 
+        if (hitPlayer1) {
             let damage = 1;
             if (enemyAmmunition[i] instanceof BossBullet) {
                 damage = enemyAmmunition[i].getDamage();
@@ -596,9 +805,17 @@ function drawEnemyBullets() {
             player.takeDamage(damage);
             score -= 10 * damage;
             if (score < 0) score = 0;
-
-
             playerBulletCount = 1;
+
+            enemyAmmunition.splice(i, 1);
+        } else if (hitPlayer2) {
+            let damage = 1;
+            if (enemyAmmunition[i] instanceof BossBullet) {
+                damage = enemyAmmunition[i].getDamage();
+            }
+
+            player2.takeDamage(damage);
+            player2BulletCount = 1;
 
             enemyAmmunition.splice(i, 1);
         } else if (enemyAmmunition[i].getX() > width + 10) {
@@ -608,57 +825,111 @@ function drawEnemyBullets() {
 }
 
 function gerenciarVidas(vidas) {
-    if (vidas < 0) vidas = 0;
-    if (vidas > 10) vidas = 10;
+    if (player.getVidas() > 0) {
+        if (vidas < 0) vidas = 0;
+        if (vidas > 10) vidas = 10;
 
-    let cor;
-    if (vidas >= 7) {
-        cor = "green";
-    } else if (vidas >= 4) {
-        cor = "yellow";
-    } else {
-        cor = "red";
+        let cor;
+        if (vidas >= 7) {
+            cor = "green";
+        } else if (vidas >= 4) {
+            cor = "yellow";
+        } else {
+            cor = "red";
+        }
+
+        for (let i = 0; i < vidas; i++) {
+            fill(cor);
+            rect(1100 + i * 30, 55, 28, 20);
+        }
+        image(Load.get('healthbar'), 1100, 35, 300, 40);
+
+        fill(255);
+        textSize(16);
+        text("P1", 1120, 25);
     }
 
-    for (let i = 0; i < vidas; i++) {
-        fill(cor);
-        rect(1100 + i * 30, 55, 28, 20);
+    if (player2Visible && player2.getVidas() > 0) {
+        let vidas2 = player2.getVidas();
+        if (vidas2 < 0) vidas2 = 0;
+        if (vidas2 > 10) vidas2 = 10;
+
+        let cor2;
+        if (vidas2 >= 7) {
+            cor2 = "green";
+        } else if (vidas2 >= 4) {
+            cor2 = "yellow";
+        } else {
+            cor2 = "red";
+        }
+
+        for (let i = 0; i < vidas2; i++) {
+            fill(cor2);
+            rect(750 + i * 30, 55, 28, 20);
+        }
+        image(Load.get('healthbar'), 750, 35, 300, 40);
+
+        fill(255);
+        textSize(16);
+        text("P2", 770, 25);
     }
-    image(Load.get('healthbar'), 1100, 35, 300, 40);
 }
 
 function drawUltimateBar() {
+    if (player.getVidas() > 0) {
+        let x1 = 1100;
+        let y1 = 80;
+        let w = 300;
+        let h = 20;
 
-    let x = 1100;
-    let y = 80;
-    let w = 300;
-    let h = 20;
+        fill(50);
+        rect(x1, y1, w, h);
 
+        if (ultimate.getIsReady()) {
+            fill(0, 255, 0);
+            rect(x1, y1, w, h);
+            fill("black");
+            textSize(14);
+            textAlign(CENTER, CENTER);
+            text("ULTIMATE PRONTA", x1 + w / 2, y1 + h / 2);
+        } else {
+            let progress = 1 - (ultimate.getRemainingCooldown() / ultimate.getCooldown());
+            fill(255, 165, 0);
+            rect(x1, y1, w * progress, h);
+            fill(255);
+            textSize(12);
+            textAlign(CENTER, CENTER);
+            let remaining = Math.ceil(ultimate.getRemainingCooldown() / 1000);
+            text(remaining + "s", x1 + w / 2, y1 + h / 2);
+        }
+    }
 
-    fill(50);
-    rect(x, y, w, h);
+    if (player2Visible && player2.getVidas() > 0) {
+        let x2 = 750;
+        let y2 = 80;
+        let w = 300;
+        let h = 20;
 
+        fill(50);
+        rect(x2, y2, w, h);
 
-    if (ultimate.getIsReady()) {
-        fill(0, 255, 0);
-        rect(x, y, w, h);
-
-
-        fill("black");
-        textSize(14);
-        textAlign(CENTER, CENTER);
-        text("ULTIMATE PRONTA", x + w / 2, y + h / 2);
-    } else {
-        let progress = 1 - (ultimate.getRemainingCooldown() / ultimate.getCooldown());
-        fill(255, 165, 0);
-        rect(x, y, w * progress, h);
-
-
-        fill(255);
-        textSize(12);
-        textAlign(CENTER, CENTER);
-        let remaining = Math.ceil(ultimate.getRemainingCooldown() / 1000);
-        text(remaining + "s", x + w / 2, y + h / 2);
+        if (ultimate2.getIsReady()) {
+            fill(0, 255, 0);
+            rect(x2, y2, w, h);
+            fill("black");
+            textSize(14);
+            textAlign(CENTER, CENTER);
+            text("ULTIMATE PRONTA", x2 + w / 2, y2 + h / 2);
+        } else {
+            let progress2 = 1 - (ultimate2.getRemainingCooldown() / ultimate2.getCooldown());
+            fill(255, 165, 0);
+            rect(x2, y2, w * progress2, h);
+            fill(255);
+            textSize(12);
+            textAlign(CENTER, CENTER);
+            let remaining2 = Math.ceil(ultimate2.getRemainingCooldown() / 1000);
+            text(remaining2 + "s", x2 + w / 2, y2 + h / 2);
+        }
     }
 }
 
@@ -682,10 +953,10 @@ function drawScore() {
 
 function checkPause() {
     let gp = navigator.getGamepads();
-    
+
     if (keyIsDown(27) && !lastEscKey) {
         gamePaused = !gamePaused;
-        
+
         if (gamePaused) {
             if (Load.get('themeSound').isPlaying()) {
                 Load.get('themeSound').pause();
@@ -704,10 +975,10 @@ function checkPause() {
     } else if (!keyIsDown(27)) {
         lastEscKey = false;
     }
-    
+
     if (gp[0] && gp[0].buttons[9].pressed && !lastPauseButton) {
         gamePaused = !gamePaused;
-        
+
         if (gamePaused) {
             if (Load.get('themeSound').isPlaying()) {
                 Load.get('themeSound').pause();
@@ -731,15 +1002,15 @@ function checkPause() {
 function drawPauseOverlay() {
     fill(0, 0, 0, 150);
     rect(0, 0, width, height);
-    
+
     fill(255, 255, 0);
     textSize(80);
     textAlign(CENTER);
-    text("PAUSADO", width/2, height/2 - 50);
-    
+    text("PAUSADO", width / 2, height / 2 - 50);
+
     fill(255);
     textSize(24);
-    text("Pressione ESC ou START para continuar", width/2, height/2 + 50);
+    text("Pressione ESC ou START para continuar", width / 2, height / 2 + 50);
 }
 
 function createMenuButtons() {
@@ -854,57 +1125,66 @@ function drawInstructions() {
 
     let col1X = 150;
     let col2X = width / 2 + 100;
-    let startY = 160;
-    let sectionSpacing = 180;
+    let startY = 140;
+    let sectionSpacing = 160;
 
-    fill(255, 255, 0);
+    fill(100, 150, 255);
     textSize(26);
-    text("MOVIMENTACAO", col1X, startY);
+    text("PLAYER 1", col1X, startY);
 
     fill(255);
-    textSize(18);
-    image(Load.get('setas'), col1X, startY + 35, 120, 90);
-    image(Load.get('wasd'), col1X + 140, startY + 35, 120, 90);
+    textSize(16);
+    text("Movimento: W A S D", col1X, startY + 30);
+    text("Atirar: C", col1X, startY + 50);
+    text("Ultimate: V", col1X, startY + 70);
+    text("Gamepad: analogico + X/O", col1X, startY + 90);
 
-    fill(255, 255, 0);
+    fill(255, 100, 100);
     textSize(26);
-    text("ATAQUES", col2X, startY);
+    text("PLAYER 2", col2X, startY);
 
     fill(255);
-    textSize(18);
-    text("Atirar", col2X + 25, startY + 35);
-    image(Load.get('spacebar'), col2X + 15, startY + 55, 70, 40);
-
-    text("Ultimate", col2X + 115, startY + 35);
-    image(Load.get('enter'), col2X + 125, startY + 50, 50, 50);
+    textSize(16);
+    text("Movimento: setas do teclado", col2X, startY + 30);
+    text("Atirar: N", col2X, startY + 50);
+    text("Ultimate: M", col2X, startY + 70);
 
     fill(255, 255, 0);
     textSize(26);
     text("POWER-UPS", col1X, startY + sectionSpacing);
 
     fill(255);
-    textSize(18);
+    textSize(16);
     image(Load.get('iconHealth'), col1X, startY + sectionSpacing + 20, 40, 40);
-    text("Vida: recupera 1 de vida", col1X + 50, startY + sectionSpacing + 45);
+    text("Recupera 1 de vida", col1X + 50, startY + sectionSpacing + 45);
 
     image(Load.get('iconPowerUp'), col1X, startY + sectionSpacing + 70, 40, 40);
-    text("Poder: dispara 2 balas simultaneas", col1X + 50, startY + sectionSpacing + 95);
+    text("Dispara 2 balas simultaneas", col1X + 50, startY + sectionSpacing + 95);
 
     fill(255, 255, 0);
     textSize(26);
     text("OBJETIVO", col2X, startY + sectionSpacing);
 
     fill(255);
-    textSize(18);
+    textSize(16);
     text("Destrua 20 inimigos", col2X + 80, startY + sectionSpacing + 50);
-    text("para enfrentar o BOSS!", col2X + 80, startY + sectionSpacing + 75);
+    text("para enfrentar o BOSS!", col2X + 80, startY + sectionSpacing + 70);
 
     image(Load.get('enemy1'), col2X, startY + sectionSpacing + 15, 80, 80);
 
-    fill(255, 100, 100);
-    textSize(16);
+    fill(255, 255, 0);
+    textSize(20);
     textAlign(CENTER);
-    text("* Ao ser atingido, voce perde o power-up e volta a atirar apenas 1 bala", width / 2, height - 160);
+    text("CONTROLES GERAIS", width / 2, startY + sectionSpacing * 2 + 20);
+
+    fill(255);
+    textSize(16);
+    text("ESC / START (gamepad): pausar", width / 2, startY + sectionSpacing * 2 + 45);
+    text("P: ativar/desativar Player 2", width / 2, startY + sectionSpacing * 2 + 65);
+
+    fill(255, 100, 100);
+    textSize(14);
+    text("* Ao ser atingido, voce perde o power-up e volta a atirar apenas 1 bala", width / 2, height - 40);
 }
 
 function drawCredits() {
@@ -1028,6 +1308,7 @@ function returnToMenu() {
     gameState = 'menu';
     gameOver = false;
     lastMenuButton = false;
+    player2Visible = false;
 
     Load.get('themeSound').stop();
     Load.get('themeBossSound').stop();
