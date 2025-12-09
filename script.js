@@ -264,7 +264,7 @@ function gamecontrol() {
         if (player.getVidas() > 0) {
             player.show(Load.get('mainShipIdle'));
         }
-        if (player2.getVidas() > 0) {
+        if (player2Visible && player2.getVidas() > 0) {
             player2.show(Load.get('mainShipIdle'));
         }
         return;
@@ -959,16 +959,20 @@ function checkPause() {
 
         if (gamePaused) {
             if (Load.get('themeSound').isPlaying()) {
-                Load.get('themeSound').pause();
+                Load.get('themeSound').stop();
             }
             if (Load.get('themeBossSound').isPlaying()) {
-                Load.get('themeBossSound').pause();
+                Load.get('themeBossSound').stop();
             }
         } else {
             if (bossSpawned && boss && boss.isAlive) {
-                Load.get('themeBossSound').play();
+                if (!Load.get('themeBossSound').isPlaying()) {
+                    Load.get('themeBossSound').loop();
+                }
             } else {
-                Load.get('themeSound').play();
+                if (!Load.get('themeSound').isPlaying()) {
+                    Load.get('themeSound').loop();
+                }
             }
         }
         lastEscKey = true;
@@ -981,16 +985,20 @@ function checkPause() {
 
         if (gamePaused) {
             if (Load.get('themeSound').isPlaying()) {
-                Load.get('themeSound').pause();
+                Load.get('themeSound').stop();
             }
             if (Load.get('themeBossSound').isPlaying()) {
-                Load.get('themeBossSound').pause();
+                Load.get('themeBossSound').stop();
             }
         } else {
             if (bossSpawned && boss && boss.isAlive) {
-                Load.get('themeBossSound').play();
+                if (!Load.get('themeBossSound').isPlaying()) {
+                    Load.get('themeBossSound').loop();
+                }
             } else {
-                Load.get('themeSound').play();
+                if (!Load.get('themeSound').isPlaying()) {
+                    Load.get('themeSound').loop();
+                }
             }
         }
         lastPauseButton = true;
